@@ -31,6 +31,9 @@ public static class DependencyInjection
         services.AddHttpClient<IKandilliIngestionService, KandilliIngestionService>();
         services.AddHostedService<KandilliBackgroundWorker>();
 
+        services.AddHttpClient<IMeteorologyService, MeteorologyService>();
+        services.AddHostedService<MeteorologyBackgroundWorker>();
+
         return services;
     }
 }
