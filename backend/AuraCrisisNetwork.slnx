@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Aura.Application/Aura.Application.csproj" />
+    <Project Path="src/Aura.Domain/Aura.Domain.csproj" />
+    <Project Path="src/Aura.Infrastructure/Aura.Infrastructure.csproj" />
+    <Project Path="src/Aura.WebApi/Aura.WebApi.csproj" />
+  </Folder>
+</Solution>
