@@ -1,6 +1,8 @@
 using Aura.Application.Common.Interfaces;
+using Aura.Infrastructure.BackgroundJobs;
 using Aura.Infrastructure.Persistence;
 using Aura.Infrastructure.Persistence.Repositories;
+using Aura.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,6 +27,9 @@ public static class DependencyInjection
         services.AddScoped<ICitizenReportRepository, CitizenReportRepository>();
         services.AddScoped<IDistrictRiskRepository, DistrictRiskRepository>();
         services.AddScoped<IOperatorRepository, OperatorRepository>();
+
+        services.AddHttpClient<IKandilliIngestionService, KandilliIngestionService>();
+        services.AddHostedService<KandilliBackgroundWorker>();
 
         return services;
     }
