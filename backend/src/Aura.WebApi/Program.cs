@@ -1,20 +1,24 @@
 using Aura.Infrastructure;
 using Aura.Infrastructure.Persistence;
+using Aura.WebApi.Hubs;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+builder.Services.AddSignalR();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddCrisisNotificationService<CrisisHub>();
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.SetIsOriginAllowed(_ => true)
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
@@ -28,6 +32,7 @@ if (app.Environment.IsDevelopment())
 app.UseCors("CorsPolicy");
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<CrisisHub>("/hubs/crisis");
 
 app.MapGet("/health", async (AuraDbContext dbContext) =>
 {

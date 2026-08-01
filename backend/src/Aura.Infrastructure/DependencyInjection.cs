@@ -36,4 +36,11 @@ public static class DependencyInjection
 
         return services;
     }
+
+    public static IServiceCollection AddCrisisNotificationService<THub>(this IServiceCollection services)
+        where THub : Microsoft.AspNetCore.SignalR.Hub
+    {
+        services.AddScoped<ICrisisNotificationService, CrisisNotificationService<THub>>();
+        return services;
+    }
 }

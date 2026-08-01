@@ -1,5 +1,4 @@
 using Aura.Application.Common.Interfaces;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -40,13 +39,14 @@ public class KandilliBackgroundWorker : BackgroundService
             var ingestionService = scope.ServiceProvider.GetRequiredService<IKandilliIngestionService>();
             var eventRepository = scope.ServiceProvider.GetRequiredService<IEventRepository>();
             var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            var notificationService = scope.ServiceProvider.GetService<ICrisisNotificationService>();
 
             var liveEvents = await ingestionService.FetchLatestEarthquakesAsync(cancellationToken);
             if (liveEvents.Count == 0) return;
 
             var existingEvents = await eventRepository.GetActiveEventsAsync(cancellationToken);
 
-            int insertedCount = 0;
+            var newEvents = new List<Domain.Entities.Event>();
             foreach (var liveEvent in liveEvents)
             {
                 bool exists = existingEvents.Any(e =>
@@ -59,14 +59,22 @@ public class KandilliBackgroundWorker : BackgroundService
                 if (!exists)
                 {
                     await eventRepository.AddAsync(liveEvent, cancellationToken);
-                    insertedCount++;
+                    newEvents.Add(liveEvent);
                 }
             }
 
-            if (insertedCount > 0)
+            if (newEvents.Count > 0)
             {
                 await unitOfWork.SaveChangesAsync(cancellationToken);
-                _logger.LogInformation("Kandilli ingestion processed {Count} new earthquake events.", insertedCount);
+                _logger.LogInformation("Kandilli ingestion processed {Count} new earthquake events.", newEvents.Count);
+
+                if (notificationService != null)
+                {
+                    foreach (var newEv in newEvents)
+                    {
+                        await notificationService.NotifyEventCreatedAsync(newEv, cancellationToken);
+                    }
+                }
             }
         }
         catch (Exception ex)
