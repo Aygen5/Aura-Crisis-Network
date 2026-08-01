@@ -1,0 +1,22 @@
+services:
+  aura-postgres:
+    image: postgis/postgis:16-3.4
+    container_name: aura-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: aura_db
+      POSTGRES_USER: aura_user
+      POSTGRES_PASSWORD: aura_password_2026!
+    ports:
+      - "5432:5432"
+    volumes:
+      - aura_postgres_data:/var/lib/postgresql/data
+      - ./docker/init-postgis.sql:/docker-entrypoint-initdb.d/init-postgis.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aura_user -d aura_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  aura_postgres_data:
