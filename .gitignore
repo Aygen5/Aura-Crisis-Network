@@ -39,3 +39,6 @@ obj/
 *.userosscache
 *.sln.docstates
 .vs/
+
+# Local Documentation (Hidden from GitHub remote)
+docs/
