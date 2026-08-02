@@ -1,12 +1,11 @@
-import type { DisasterType } from "@/lib/aura-data";
+import type { DisasterType } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 type Props = {
-  type: DisasterType;
+  type: DisasterType | string;
   className?: string;
   animated?: boolean;
 };
-
 
 export function DisasterIcon({ type, className, animated = true }: Props) {
   const common = {
@@ -19,7 +18,9 @@ export function DisasterIcon({ type, className, animated = true }: Props) {
     className: cn("h-full w-full", className),
   };
 
-  switch (type) {
+  const normalizedType = type?.toLowerCase();
+
+  switch (normalizedType) {
     case "earthquake":
       return (
         <svg {...common}>

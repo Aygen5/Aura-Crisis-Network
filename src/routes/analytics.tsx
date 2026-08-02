@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -16,6 +16,7 @@ import {
 } from "recharts";
 import { AppShell } from "@/components/aura/AppShell";
 import { PanelCard, StatCard } from "@/components/aura/primitives";
+import { fetchAnalyticsSummary, type AnalyticsSummaryDto } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/analytics")({
@@ -37,33 +38,33 @@ export const Route = createFileRoute("/analytics")({
   component: Analytics,
 });
 
-const ranges = ["Daily", "Weekly", "Monthly"] as const;
+const ranges = ["Günlük", "Haftalık", "Aylık"] as const;
 
 const volume = [
-  { t: "Mon", earthquake: 14, flood: 6, wildfire: 3, report: 21 },
-  { t: "Tue", earthquake: 9, flood: 11, wildfire: 2, report: 18 },
-  { t: "Wed", earthquake: 17, flood: 8, wildfire: 5, report: 26 },
-  { t: "Thu", earthquake: 12, flood: 14, wildfire: 4, report: 30 },
-  { t: "Fri", earthquake: 21, flood: 9, wildfire: 7, report: 24 },
-  { t: "Sat", earthquake: 16, flood: 5, wildfire: 6, report: 19 },
-  { t: "Sun", earthquake: 11, flood: 7, wildfire: 3, report: 15 },
+  { t: "Pzt", earthquake: 14, flood: 6, wildfire: 3, report: 21 },
+  { t: "Sal", earthquake: 9, flood: 11, wildfire: 2, report: 18 },
+  { t: "Çar", earthquake: 17, flood: 8, wildfire: 5, report: 26 },
+  { t: "Per", earthquake: 12, flood: 14, wildfire: 4, report: 30 },
+  { t: "Cum", earthquake: 21, flood: 9, wildfire: 7, report: 24 },
+  { t: "Cmt", earthquake: 16, flood: 5, wildfire: 6, report: 19 },
+  { t: "Paz", earthquake: 11, flood: 7, wildfire: 3, report: 15 },
 ];
 
 const distribution = [
-  { name: "Earthquake", value: 42, color: "var(--critical)" },
-  { name: "Flood", value: 24, color: "var(--warning)" },
-  { name: "Wildfire", value: 14, color: "var(--critical)" },
-  { name: "Landslide", value: 10, color: "var(--warning)" },
-  { name: "User Report", value: 10, color: "var(--violet)" },
+  { name: "Deprem", value: 42, color: "#ef4444" },
+  { name: "Sel / Taşkın", value: 24, color: "#0ea5e9" },
+  { name: "Yangın", value: 14, color: "#f97316" },
+  { name: "Heyelan", value: 10, color: "#eab308" },
+  { name: "İhbarlar", value: 10, color: "#a855f7" },
 ];
 
 const response = [
-  { d: "W1", minutes: 8.4 },
-  { d: "W2", minutes: 7.1 },
-  { d: "W3", minutes: 6.8 },
-  { d: "W4", minutes: 5.9 },
-  { d: "W5", minutes: 6.2 },
-  { d: "W6", minutes: 5.1 },
+  { d: "H1", minutes: 8.4 },
+  { d: "H2", minutes: 7.1 },
+  { d: "H3", minutes: 6.8 },
+  { d: "H4", minutes: 5.9 },
+  { d: "H5", minutes: 6.2 },
+  { d: "H6", minutes: 5.1 },
 ];
 
 const districts = [
@@ -89,12 +90,24 @@ const tooltipStyle = {
 };
 
 function Analytics() {
-  const [range, setRange] = useState<(typeof ranges)[number]>("Weekly");
+  const [range, setRange] = useState<(typeof ranges)[number]>("Haftalık");
+  const [summary, setSummary] = useState<AnalyticsSummaryDto | null>(null);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const data = await fetchAnalyticsSummary();
+        setSummary(data);
+      } catch {
+      }
+    }
+    loadData();
+  }, []);
 
   return (
     <AppShell
-      title="Analytics"
-      description="Response performance and event distribution across the coordination region."
+      title="Analitik Performans"
+      description="Kriz yönetim koordinasyon bölgesi müdahale süreleri ve afet dağılım analitiği."
       actions={
         <div className="flex items-center gap-0.5 rounded-lg border border-border p-0.5">
           {ranges.map((r) => (
@@ -105,7 +118,7 @@ function Analytics() {
                 "rounded-md px-3 py-1.5 text-[12px] transition-colors duration-200",
                 range === r
                   ? "bg-secondary text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               {r}
@@ -115,22 +128,41 @@ function Analytics() {
       }
     >
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Total Events" value="412" delta="+12.4%" />
-        <StatCard label="Verified Reports" value="286" tone="online" delta="+8.1%" />
-        <StatCard label="Avg. Response" value="5.1m" tone="info" delta="−1.7m" />
-        <StatCard label="Critical Incidents" value="34" tone="critical" delta="+3" />
+        <StatCard
+          label="Toplam Aktif Afetler"
+          value={summary ? summary.totalActiveEvents.toString() : "0"}
+          delta="Canlı Veri"
+        />
+        <StatCard
+          label="Onaylanan İhbarlar"
+          value={summary ? summary.verifiedReportsCount.toString() : "0"}
+          tone="online"
+          delta="Saha Doğrulama"
+        />
+        <StatCard
+          label="Bekleyen İhbarlar"
+          value={summary ? summary.pendingReportsCount.toString() : "0"}
+          tone="info"
+          delta="Nöbetçi Masa"
+        />
+        <StatCard
+          label="Max Deprem Büyüklüğü"
+          value={summary ? `${summary.highestEarthquakeMagnitude.toFixed(1)} ML` : "0.0 ML"}
+          tone="critical"
+          delta="Kandilli Rasathanesi"
+        />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
-        <PanelCard title={`Event Volume · ${range}`} className="lg:col-span-2">
+        <PanelCard title={`Olay Hacmi · ${range}`} className="lg:col-span-2">
           <div className="h-[300px] p-6">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={volume}>
                 <defs>
-                  {["critical", "warning", "violet"].map((c) => (
-                    <linearGradient key={c} id={`g-${c}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={`var(--${c})`} stopOpacity={0.3} />
-                      <stop offset="100%" stopColor={`var(--${c})`} stopOpacity={0} />
+                  {["#ef4444", "#f59e0b", "#a855f7"].map((c, i) => (
+                    <linearGradient key={c} id={`g-${i}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={c} stopOpacity={0.3} />
+                      <stop offset="100%" stopColor={c} stopOpacity={0} />
                     </linearGradient>
                   ))}
                 </defs>
@@ -138,15 +170,15 @@ function Analytics() {
                 <XAxis dataKey="t" {...axis} />
                 <YAxis {...axis} width={28} />
                 <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "var(--border)" }} />
-                <Area type="monotone" dataKey="report" stackId="1" stroke="var(--violet)" fill="url(#g-violet)" strokeWidth={2} />
-                <Area type="monotone" dataKey="earthquake" stackId="1" stroke="var(--critical)" fill="url(#g-critical)" strokeWidth={2} />
-                <Area type="monotone" dataKey="flood" stackId="1" stroke="var(--warning)" fill="url(#g-warning)" strokeWidth={2} />
+                <Area type="monotone" dataKey="report" stackId="1" stroke="#a855f7" fill="url(#g-2)" strokeWidth={2} />
+                <Area type="monotone" dataKey="earthquake" stackId="1" stroke="#ef4444" fill="url(#g-0)" strokeWidth={2} />
+                <Area type="monotone" dataKey="flood" stackId="1" stroke="#f59e0b" fill="url(#g-1)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </PanelCard>
 
-        <PanelCard title="Disaster Distribution">
+        <PanelCard title="Afet Dağılımı">
           <div className="h-[300px] p-6">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -177,30 +209,30 @@ function Analytics() {
           </ul>
         </PanelCard>
 
-        <PanelCard title="Heatmap Summary" className="lg:col-span-2">
+        <PanelCard title="İlçe Yoğunluk Haritası" className="lg:col-span-2">
           <div className="grid grid-cols-6 gap-1.5 p-6 md:grid-cols-12">
             {districts.map((d, i) => {
               const intensity = ((i * 37) % 100) / 100;
               return (
                 <div
                   key={d}
-                  title={`${d} · ${Math.round(intensity * 100)} index`}
+                  title={`${d} · ${Math.round(intensity * 100)} indeks`}
                   className="group aspect-square rounded-md border border-border/60 transition-transform duration-200 hover:scale-110"
                   style={{
-                    background: `color-mix(in oklab, var(--critical) ${Math.round(intensity * 70)}%, var(--card))`,
+                    background: `color-mix(in oklab, #ef4444 ${Math.round(intensity * 70)}%, var(--card))`,
                   }}
                 />
               );
             })}
           </div>
           <div className="flex items-center gap-3 px-6 pb-6 text-[11px] text-muted-foreground">
-            Low
-            <span className="h-1.5 flex-1 rounded-full bg-linear-to-r from-card to-critical" />
-            High
+            Düşük
+            <span className="h-1.5 flex-1 rounded-full bg-gradient-to-r from-card to-red-500" />
+            Yüksek
           </div>
         </PanelCard>
 
-        <PanelCard title="Response Time Trend">
+        <PanelCard title="Müdahale Süresi Trendi">
           <div className="h-[220px] p-6">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={response} barSize={18}>
@@ -208,7 +240,7 @@ function Analytics() {
                 <XAxis dataKey="d" {...axis} />
                 <YAxis {...axis} width={28} />
                 <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--secondary)" }} />
-                <Bar dataKey="minutes" fill="var(--info)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="minutes" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
