@@ -1,5 +1,7 @@
 using Aura.Application.DTOs;
+using Aura.Application.Events.Commands.EscalateEvent;
 using Aura.Application.Events.Queries.GetActiveEvents;
+using Aura.Application.Events.Queries.GetEventById;
 using Aura.Application.Events.Queries.GetEventsByBoundingBox;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,6 +16,14 @@ public class EventsController : BaseApiController
         return Ok(result);
     }
 
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<EventDto>> GetEventById(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await Mediator.Send(new GetEventByIdQuery(id), cancellationToken);
+        if (result == null) return NotFound(new { Message = $"Event with ID {id} was not found." });
+        return Ok(result);
+    }
+
     [HttpGet("bounding-box")]
     public async Task<ActionResult<IReadOnlyList<EventDto>>> GetEventsByBoundingBox(
         [FromQuery] double minLat,
@@ -25,5 +35,13 @@ public class EventsController : BaseApiController
         var query = new GetEventsByBoundingBoxQuery(minLat, minLng, maxLat, maxLng);
         var result = await Mediator.Send(query, cancellationToken);
         return Ok(result);
+    }
+
+    [HttpPost("{id:guid}/escalate")]
+    public async Task<IActionResult> EscalateEvent(Guid id, CancellationToken cancellationToken)
+    {
+        var success = await Mediator.Send(new EscalateEventCommand(id), cancellationToken);
+        if (!success) return NotFound(new { Message = $"Event with ID {id} was not found." });
+        return NoContent();
     }
 }

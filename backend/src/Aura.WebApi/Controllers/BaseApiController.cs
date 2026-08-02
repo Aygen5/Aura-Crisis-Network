@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Aura.WebApi.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/[controller]")]
 public abstract class BaseApiController : ControllerBase
 {
     private ISender? _mediator;

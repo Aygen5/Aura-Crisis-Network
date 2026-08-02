@@ -1,13 +1,13 @@
 using Aura.Application.DTOs;
 using Aura.Application.Reports.Commands.CreateCitizenReport;
-using Aura.Application.Reports.Commands.VerifyCitizenReport;
+using Aura.Application.Reports.Commands.UpdateReportStatus;
 using Aura.Application.Reports.Queries.GetReportsByStatus;
 using Aura.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Aura.WebApi.Controllers;
 
-[Route("api/reports")]
+[Route("api/v1/reports")]
 public class CitizenReportsController : BaseApiController
 {
     [HttpGet]
@@ -29,10 +29,13 @@ public class CitizenReportsController : BaseApiController
         return CreatedAtAction(nameof(GetReportsByStatus), new { status = result.Status }, result);
     }
 
-    [HttpPut("{id:guid}/verify")]
-    public async Task<IActionResult> VerifyReport(Guid id, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/status")]
+    public async Task<IActionResult> UpdateReportStatus(
+        Guid id,
+        [FromQuery] ReportStatus status,
+        CancellationToken cancellationToken)
     {
-        var command = new VerifyCitizenReportCommand(id);
+        var command = new UpdateReportStatusCommand(id, status);
         var success = await Mediator.Send(command, cancellationToken);
 
         if (!success)
