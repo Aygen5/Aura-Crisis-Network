@@ -22,64 +22,71 @@ Proje backend tarafında katmanlı, bağımlılıkların içeri doğru yönlendi
 
 ## 🗺️ 2. Ürün Geliştirme Adımları (Aşamalı Yol Haritası)
 
-### 🟢 FAZ 1: Backend Altyapısı ve PostGIS Veritabanı Kurulumu
+### 🟢 FAZ 1: Backend Altyapısı ve PostGIS Veritabanı Kurulumu *(TAMAMLANDI)*
 * **Adım 1.1:** `.NET 10 Clean Architecture` çözümünün (`AuraCrisisNetwork.slnx`) ve 4 projenin oluşturulması (`Aura.Domain`, `Aura.Application`, `Aura.Infrastructure`, `Aura.WebApi`). *(TAMAMLANDI)*
 * **Adım 1.2:** PostgreSQL + PostGIS Docker altyapısının (`docker-compose.yml` ve `init-postgis.sql`) kurulması. *(TAMAMLANDI)*
-* **Adım 1.3:** `Aura.Domain` Katmanının İnşası (Varlıklar: `Event`, `CitizenReport`, `DistrictRisk`, `Operator`, Value Objects: `GeoPoint`, Enums, Domain Events).
-* **Adım 1.4:** `Aura.Application` Katmanının İnşası (Repository Arayüzleri, DTO'lar, CQRS MediatR Komut/Sorguları, Servis Kontratları).
-* **Adım 1.5:** `Aura.Infrastructure` Katmanının İnşası (EF Core Npgsql + NetTopologySuite, PostGIS `Point` Mapping, `AuraDbContext`, EF Core Migrations).
-* **Adım 1.6:** `Aura.WebApi` Katmanı ve Docker PostGIS Veritabanı Canlı Bağlantısının Kurulması & Doğrulanması.
+* **Adım 1.3:** `Aura.Domain` Katmanının İnşası (Varlıklar: `Event`, `CitizenReport`, `DistrictRisk`, `Operator`, Value Objects: `GeoPoint`, Enums, Domain Events). *(TAMAMLANDI)*
+* **Adım 1.4:** `Aura.Application` Katmanının İnşası (Repository Arayüzleri, DTO'lar, CQRS MediatR Komut/Sorguları, Servis Kontratları). *(TAMAMLANDI)*
+* **Adım 1.5:** `Aura.Infrastructure` Katmanının İnşası (EF Core Npgsql + NetTopologySuite, PostGIS `Point` Mapping, `AuraDbContext`, EF Core Migrations). *(TAMAMLANDI)*
+* **Adım 1.6:** `Aura.WebApi` Katmanı ve Docker PostGIS Veritabanı Canlı Bağlantısının Kurulması & Doğrulanması. *(TAMAMLANDI)*
 
 ---
 
-### 🟢 FAZ 2: Canlı Veri Akışları ve Ingestion Servisleri (Sıfır Sahte Veri)
+### 🟢 FAZ 2: Canlı Veri Akışları ve Ingestion Servisleri (Sıfır Sahte Veri) *(TAMAMLANDI)*
 * **Adım 2.1 (Kandilli / AFAD Deprem Servisi):** 
-  - Kandilli Rasathanesi ve AFAD'ın canlı son depremler akışını (JSON/XML) 60 saniyede bir sorgulayan `BackgroundService` (`IHostedService`) yazılması.
-  - Gelen gerçek deprem verilerinin büyüklük (`magnitude`), derinlik (`depth`), koordinat (`Point`) ve ilçe eşleşmesi yapılarak doğrudan `Events` tablosuna kaydedilmesi.
+  - Kandilli Rasathanesi ve AFAD'ın canlı son depremler akışını (JSON/XML) 60 saniyede bir sorgulayan `BackgroundService` (`IHostedService`) yazılması ve Composite Idempotency kontrolünün eklenmesi. *(TAMAMLANDI)*
 * **Adım 2.2 (Meteoroloji & Hava Durumu Servisi):**
-  - Open-Meteo veya Meteoroloji Genel Müdürlüğü açık API'sinden İstanbul ve Marmara ilçeleri için saatlik yağış miktarı (`mm/h`) ve rüzgar hızı (`km/h`) çekilmesi.
-  - Yağış ve rüzgar verisinden gerçek zamanlı Sel ve Yangın risk indeksinin hesaplanması.
-* **Adım 2.3 (Gerçek İhbar Veritabanı):**
-  - Vatandaş ve saha birimlerinin göndereceği ihbarlar için `CitizenReports` tablosunun hazırlanması.
+  - Open-Meteo açık API'sinden ilçeler için saatlik yağış miktarı (`mm/h`) ve rüzgar hızı (`km/h`) çekilmesi, canlı Sel, Yangın ve Heyelan risk skorlarının güncellenmesi. *(TAMAMLANDI)*
+* **Adım 2.3 (SignalR Real-Time Push Hub):**
+  - `CrisisHub` (`/hubs/crisis`) ve `CrisisNotificationService` ile canlı WebSocket push bildirim altyapısının kurulması. *(TAMAMLANDI)*
 
 ---
 
-### 🟢 FAZ 3: API Endpoint'leri ve SignalR Canlı Bağlantı Hub'ı
-* **Adım 3.1 (CQRS Event Endpoints):**
-  - `GET /api/v1/events`: Filtreli (afet türü, tarih, koordinat yarıçapı) canlı olayları getirme.
-  - `GET /api/v1/events/{id}`: Tekil olay detayı, etkilenen tahmini nüfus ve etki yarıçapı analizi.
-  - `POST /api/v1/events/{id}/escalate`: Kriz seviyesini yükseltme.
-* **Adım 3.2 (Report Endpoints):**
-  - `GET /api/v1/reports`: İhbar listesi (durum sekmelerine göre: Pending, Verified, Rejected).
-  - `POST /api/v1/reports`: Yeni vatandaş/saha ihbarı oluşturma.
-  - `PATCH /api/v1/reports/{id}/status`: Operatörün ihbarı onaylaması veya reddetmesi.
-* **Adım 3.3 (Risk & Analytics Endpoints):**
-  - `GET /api/v1/risk/analysis`: Gerçek meteoroloji ve deprem verilerinden hesaplanan ilçe bazlı sismik, sel ve yangın risk skorları.
-  - `GET /api/v1/analytics/summary`: Afet dağılımları ve müdahale süreleri istatistikleri.
-* **Adım 3.4 (SignalR Real-Time Hub):**
-  - `CrisisHub` (`/hubs/crisis`) geliştirilmesi.
-  - Arka planda Kandilli'den yeni deprem düştüğünde veya yeni ihbar geldiğinde bağlı tüm ön yüz istemcilerine `ReceiveEvent` ve `ReceiveReport` sinyallerinin fırlatılması.
+### 🟢 FAZ 3: API Endpoint'leri ve MediatR CQRS Altyapısı *(TAMAMLANDI)*
+* **Adım 3.1 (CQRS Event & Report Handlers):**
+  - `GetActiveEventsQuery`, `GetEventsByBoundingBoxQuery`, `GetReportsByStatusQuery`, `CreateCitizenReportCommand`, `VerifyCitizenReportCommand` handler'larının yazılması. *(TAMAMLANDI)*
+* **Adım 3.2 (REST API Endpoints & Controllers):**
+  - `EventsController`, `CitizenReportsController`, `RiskController`, `AnalyticsController` yazılması. *(TAMAMLANDI)*
+* **Adım 3.3 (Risk, Analytics & Route Alignment):**
+  - `GET /api/v1/risk/analysis`, `GET /api/v1/analytics/summary`, `GET /api/v1/events/{id}`, `POST /api/v1/events/{id}/escalate`, `PATCH /api/v1/reports/{id}/status` rotalarının standartlaştırılması. *(TAMAMLANDI)*
 
 ---
 
 ### 🟢 FAZ 4: Frontend Temizliği ve Gerçek API Entegrasyonu
-* **Adım 4.1 (Lovable ve Sahte Veri Temizliği):**
+* **Adım 4.1 (Lovable ve Sahte Veri Temizliği & SignalR Entegrasyonu):**
   - Sahte veri içeren `src/lib/aura-data.ts` dosyasının projeden tamamen kaldırılması.
-* **Adım 4.2 (API Client & TanStack Query):**
-  - Backend API ile iletişim kuracak Axios/Fetch istemcisinin (`src/lib/api-client.ts`) yazılması.
-  - TanStack Query hook'larının oluşturulması (`useEvents`, `useEventDetail`, `useReports`, `useRiskAnalysis`, `useAnalytics`).
-* **Adım 4.3 (SignalR İstemcisi):**
-  - Ön yüze `@microsoft/signalr` paketinin eklenmesi.
-  - Harita ve canlı akış bileşenlerinin (`index.tsx`, `MapCanvas.tsx`) SignalR event'lerini dinleyerek anında güncellenmesi.
+  - Backend API ile iletişim kuracak Axios/Fetch istemcisinin (`src/lib/api-client.ts`) ve `@microsoft/signalr` istemcisinin (`src/lib/signalr-client.ts`) yazılması.
+  - Harita ve canlı akış bileşenlerinin (`MapCanvas.tsx`, `AppShell.tsx`, `reports.tsx`, `analytics.tsx`) canlı API verisine bağlanması.
 
 ---
 
-### 🟢 FAZ 5: Doğrulama ve Üretim Kalitesi (Production Readiness)
+### 🟢 FAZ 5: Uçtan Uca Doğrulama ve Performans Optimizasyonu
 * **Adım 5.1 (Uçtan Uca Doğrulama):**
   - Gerçek Kandilli verisi geldiğinde -> .NET Service veritabanına yazar -> SignalR tetiklenir -> React haritasında pini yanıp söner akışının doğrulanması.
 * **Adım 5.2 (Performans & GİS İndeksleme):**
-  - PostGIS `GIST` coğrafi indekslerinin eklenmesi.
-  - Redis önbellekleme (Analytics ve Risk skorları için).
+  - PostGIS `GIST` coğrafi indekslerinin ve veritabanı sorgu performansının doğrulanması.
+
+---
+
+### 🟢 FAZ 6: Kurumsal Kalite, Testler, Güvenlik ve DevOps (Production Readiness)
+* **Adım 6.1 (Unit Tests):**
+  - `Aura.Domain` (Value Objects, Entity iş mantıkları) ve `Aura.Application` (CQRS Handlers) birim testlerinin yazılması.
+* **Adım 6.2 (Integration Tests):**
+  - `Aura.Infrastructure` (PostgreSQL / EF Core Repositories) ve `Aura.WebApi` (Controller Endpoints & SignalR Hub) entegrasyon testlerinin yazılması.
+* **Adım 6.3 (End-to-End Tests):**
+  - Kandilli -> Database -> SignalR -> React uçtan uca akış testleri.
+* **Adım 6.4 (GitHub Actions CI/CD Pipeline):**
+  - Restore, Build, Test, Code Coverage iş akışının kurulması.
+* **Adım 6.5 (Docker Production Setup):**
+  - Multi-stage production `Dockerfile` ve `docker-compose.prod.yml` yapılandırması.
+* **Adım 6.6 (Structured Logging):**
+  - Serilog entegrasyonu ve yapılandırılmış log izleme.
+* **Adım 6.7 (Monitoring & Metrics):**
+  - Health Checks, Prometheus / OpenTelemetry metriklerinin yapılandırılması.
+* **Adım 6.8 (Security & Resilience):**
+  - Rate Limiting (Kötüye kullanımı engelleme), Global Exception Handling Middleware ve FluentValidation doğrulamaları.
+* **Adım 6.9 (Kurumsal Dokümantasyon & Swagger):**
+  - OpenAPI / Swagger dokümantasyonu, Mimari Sıralama Şeması (Sequence Diagram) ve GitHub Portföyü için `README.md` hazırlanması.
 
 ---
 
@@ -88,10 +95,11 @@ Proje backend tarafında katmanlı, bağımlılıkların içeri doğru yönlendi
 | Faz | Açıklama | Beklenen Çıktı |
 | :--- | :--- | :--- |
 | **Faz 1** | .NET 10 Clean Architecture & PostGIS DB Setup | Derlenebilir .NET 10 Clean Architecture ve PostgreSQL veritabanı |
-| **Faz 2** | Live Ingestion (Kandilli/AFAD/Weather) | Gerçek canlı deprem ve hava verisi çeken arka plan servisi |
-| **Faz 3** | Controllers, MediatR CQRS & SignalR Hub | Tamamlanmış REST API ve canlı WebSocket Hub'ı |
+| **Faz 2** | Live Ingestion (Kandilli/AFAD/Weather) | Gerçek canlı deprem ve hava verisi çeken arka plan servisi & SignalR |
+| **Faz 3** | Controllers, MediatR CQRS & SignalR Hub | Tamamlanmış REST API ve v1 rotaları |
 | **Faz 4** | Frontend Refactoring & Direct Integration | Sahte veriden temizlenmiş, canlı API ile çalışan React uygulaması |
-| **Faz 5** | Test, Optimizasyon & Dokümantasyon | Üretim seviyesinde (Production-ready) Kriz Yönetim Platformu |
+| **Faz 5** | Uçtan Uca Doğrulama & Performans | Üretim seviyesinde doğrulama |
+| **Faz 6** | Testing, CI/CD, Security & DevOps | GitHub Portföyü için Enterprise Production-Ready Standart |
 
 ---
 *Bu yol haritası sahte (mock) veri kullanmadan doğrudan canlı backend ve veritabanı entegrasyonu sağlayacak şekilde tasarlanmıştır.*
