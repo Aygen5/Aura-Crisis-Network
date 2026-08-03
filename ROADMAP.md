@@ -52,54 +52,84 @@ Proje backend tarafında katmanlı, bağımlılıkların içeri doğru yönlendi
 
 ---
 
-### 🟢 FAZ 4: Frontend Temizliği ve Gerçek API Entegrasyonu
+### 🟢 FAZ 4: Frontend Temizliği ve Gerçek API Entegrasyonu *(TAMAMLANDI)*
 * **Adım 4.1 (Lovable ve Sahte Veri Temizliği & SignalR Entegrasyonu):**
   - Sahte veri içeren `src/lib/aura-data.ts` dosyasının projeden tamamen kaldırılması.
   - Backend API ile iletişim kuracak Axios/Fetch istemcisinin (`src/lib/api-client.ts`) ve `@microsoft/signalr` istemcisinin (`src/lib/signalr-client.ts`) yazılması.
-  - Harita ve canlı akış bileşenlerinin (`MapCanvas.tsx`, `AppShell.tsx`, `reports.tsx`, `analytics.tsx`) canlı API verisine bağlanması.
+  - Harita ve canlı akış bileşenlerinin (`MapCanvas.tsx`, `AppShell.tsx`, `reports.tsx`, `analytics.tsx`) canlı API verisine bağlanması. *(TAMAMLANDI)*
 
 ---
 
-### 🟢 FAZ 5: Uçtan Uca Doğrulama ve Performans Optimizasyonu
+### 🟢 FAZ 5: Uçtan Uca Doğrulama ve Performans Optimizasyonu *(TAMAMLANDI)*
 * **Adım 5.1 (Uçtan Uca Doğrulama):**
-  - Gerçek Kandilli verisi geldiğinde -> .NET Service veritabanına yazar -> SignalR tetiklenir -> React haritasında pini yanıp söner akışının doğrulanması.
+  - Gerçek Kandilli verisi geldiğinde -> .NET Service veritabanına yazar -> SignalR tetiklenir -> React haritasında pini yanıp söner akışının doğrulanması. *(TAMAMLANDI)*
 * **Adım 5.2 (Performans & GİS İndeksleme):**
-  - PostGIS `GIST` coğrafi indekslerinin ve veritabanı sorgu performansının doğrulanması.
+  - PostGIS `GIST` coğrafi indekslerinin ve veritabanı sorgu performansının doğrulanması. *(TAMAMLANDI)*
 
 ---
 
-### 🟢 FAZ 6: Kurumsal Kalite, Testler, Güvenlik ve DevOps (Production Readiness)
-* **Adım 6.1 (Unit Tests):**
-  - `Aura.Domain` (Value Objects, Entity iş mantıkları) ve `Aura.Application` (CQRS Handlers) birim testlerinin yazılması.
-* **Adım 6.2 (Integration Tests):**
-  - `Aura.Infrastructure` (PostgreSQL / EF Core Repositories) ve `Aura.WebApi` (Controller Endpoints & SignalR Hub) entegrasyon testlerinin yazılması.
-* **Adım 6.3 (End-to-End Tests):**
-  - Kandilli -> Database -> SignalR -> React uçtan uca akış testleri.
-* **Adım 6.4 (GitHub Actions CI/CD Pipeline):**
-  - Restore, Build, Test, Code Coverage iş akışının kurulması.
-* **Adım 6.5 (Docker Production Setup):**
-  - Multi-stage production `Dockerfile` ve `docker-compose.prod.yml` yapılandırması.
-* **Adım 6.6 (Structured Logging):**
-  - Serilog entegrasyonu ve yapılandırılmış log izleme.
-* **Adım 6.7 (Monitoring & Metrics):**
-  - Health Checks, Prometheus / OpenTelemetry metriklerinin yapılandırılması.
-* **Adım 6.8 (Security & Resilience):**
-  - Rate Limiting (Kötüye kullanımı engelleme), Global Exception Handling Middleware ve FluentValidation doğrulamaları.
-* **Adım 6.9 (Kurumsal Dokümantasyon & Swagger):**
-  - OpenAPI / Swagger dokümantasyonu, Mimari Sıralama Şeması (Sequence Diagram) ve GitHub Portföyü için `README.md` hazırlanması.
+### 🟢 FAZ 6: Kimlik Doğrulama ve Güvenlik Altyapısı (Auth & Security)
+* **Adım 6.1 (ASP.NET Core Identity & User Model):**
+  - Identity `ApplicationUser` ve `ApplicationRole` entegrasyonu, EF Core DbContext uyarlaması.
+* **Adım 6.2 (JWT Access & Refresh Token Engine):**
+  - `ITokenProvider` servisi, Refresh Token rotasyonu ve veritabanı persistansı.
+* **Adım 6.3 (Role & Claim-Based Authorization):**
+  - `Admin`, `Operator`, `Citizen` rolleri için `[Authorize(Roles = "...")]` politikalarının API uç noktalarına uygulanması.
+* **Adım 6.4 (React Auth Entegrasyonu):**
+  - Login/Register sayfalarının canlı Auth API'sine bağlanması, Token saklama ve HTTP Bearer Interceptor.
+
+---
+
+### 🟢 FAZ 7: Kullanıcı Deneyimi, Medya & Bildirim Altyapısı (Media & Notifications)
+* **Adım 7.1 (Fotoğraf / Video / Medya Yükleme Servisi):**
+  - `IFileStorageService` ile ihbarlara çoklu medya yükleme, Magic Bytes güvenlik doğrulaması ve CDN/Storage entegrasyonu.
+* **Adım 7.2 (Multi-Channel Notification Altyapısı):**
+  - SignalR + FCM Push Notification entegrasyonu ve Outbox Pattern ile arkaplanda güvenli bildirim gönderimi.
+
+---
+
+### 🟢 FAZ 8: Gelişmiş GIS, Saha Operasyonları & Canlı Araç Takibi (Advanced GIS & Fleet)
+* **Adım 8.1 (PostGIS Polygon & Geofencing):**
+  - Kriz ve sel riski poligonlarının haritada çizilmesi, kesişim (Spatial Intersection) ve Buffer analizi.
+* **Adım 8.2 (Cluster & Tile Performance):**
+  - Server-side Marker Clustering ve Vector Tile (`ST_AsMVT`) performans optimizasyonu.
+* **Adım 8.3 (Saha Ekipleri & Canlı Araç Takibi):**
+  - `EmergencyUnit` varlığı, 5s canlı GPS takibi için adanmış `/hubs/vehicles` SignalR Hub'ı ve PostGIS En Yakın Ekip (KNN) hesabı.
+
+---
+
+### 🟢 FAZ 9: Production Altyapısı, Performans & Monitoring (Resilience & Telemetry)
+* **Adım 9.1 (MediatR Caching & Redis):**
+  - Caching Pipeline Behavior, Redis önbellekleme ve otomatik invalidate mekanizması.
+* **Adım 9.2 (EF Core Audit Logging Interceptor):**
+  - Otomatik kullanıcı IP, eski/yeni değer değişim denetim izi (Audit Trail).
+* **Adım 9.3 (Serilog, OpenTelemetry & Prometheus/Grafana):**
+  - Yapılandırılmış loglama, metrik toplama ve Health Checks paneli.
+
+---
+
+### 🟢 FAZ 10: Kalite, Kurumsal Testler & Yayınlama (Testing, CI/CD & Deployment)
+* **Adım 10.1 (Unit Tests):** `Aura.Domain` ve `Aura.Application` birim testleri (xUnit, Moq, FluentAssertions).
+* **Adım 10.2 (Integration & API Tests):** Testcontainers PostgreSQL ile gerçek veritabanı ve WebApplicationFactory API testleri.
+* **Adım 10.3 (GitHub Actions CI/CD):** Restore, Build, Test, Docker Build otomasyonu.
+* **Adım 10.4 (Production Deployment):** Docker Compose, Nginx Reverse Proxy, Rate Limiting & SSL/HTTPS yayınlama.
 
 ---
 
 ## 📊 Özet Faz Zaman Tablosu
 
-| Faz | Açıklama | Beklenen Çıktı |
-| :--- | :--- | :--- |
-| **Faz 1** | .NET 10 Clean Architecture & PostGIS DB Setup | Derlenebilir .NET 10 Clean Architecture ve PostgreSQL veritabanı |
-| **Faz 2** | Live Ingestion (Kandilli/AFAD/Weather) | Gerçek canlı deprem ve hava verisi çeken arka plan servisi & SignalR |
-| **Faz 3** | Controllers, MediatR CQRS & SignalR Hub | Tamamlanmış REST API ve v1 rotaları |
-| **Faz 4** | Frontend Refactoring & Direct Integration | Sahte veriden temizlenmiş, canlı API ile çalışan React uygulaması |
-| **Faz 5** | Uçtan Uca Doğrulama & Performans | Üretim seviyesinde doğrulama |
-| **Faz 6** | Testing, CI/CD, Security & DevOps | GitHub Portföyü için Enterprise Production-Ready Standart |
+| Faz | Açıklama | Beklenen Çıktı | Durum |
+| :--- | :--- | :--- | :--- |
+| **Faz 1** | .NET 10 Clean Architecture & PostGIS Setup | Derlenebilir Clean Architecture & DB | ✅ **Tamamlandı** |
+| **Faz 2** | Live Ingestion Workers & SignalR Hub | Canlı Kandilli/AFAD/Weather akışı | ✅ **Tamamlandı** |
+| **Faz 3** | REST API & MediatR CQRS | REST API uç noktaları | ✅ **Tamamlandı** |
+| **Faz 4** | Frontend Refactoring & Direct API Integration | Canlı API ile çalışan React uygulaması | ✅ **Tamamlandı** |
+| **Faz 5** | Uçtan Uca Doğrulama & Performans | Üretim seviyesinde doğrulama | ✅ **Tamamlandı** |
+| **Faz 6** | Auth & Security (JWT, Refresh Token, RBAC) | Güvenli Kimlik Doğrulama | ⏳ **Sıradaki Adım** |
+| **Faz 7** | Media Storage & Multi-Channel Notifications | Dosya Yükleme & Push Notification | 📅 Planlandı |
+| **Faz 8** | Advanced GIS, Geofencing & Fleet Tracking | Canlı Araç Takibi & Poligon Analizi | 📅 Planlandı |
+| **Faz 9** | Redis Caching, Audit Logs & Monitoring | Telemetri & Yüksek Performans | 📅 Planlandı |
+| **Faz 10** | Testing, CI/CD & Production Deployment | Docker, Nginx & GitHub Actions CI/CD | 📅 Planlandı |
 
 ---
 *Bu yol haritası sahte (mock) veri kullanmadan doğrudan canlı backend ve veritabanı entegrasyonu sağlayacak şekilde tasarlanmıştır.*
