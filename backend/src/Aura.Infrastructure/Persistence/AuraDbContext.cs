@@ -1,16 +1,19 @@
 using System.Linq.Expressions;
 using Aura.Domain.Common;
 using Aura.Domain.Entities;
+using Aura.Infrastructure.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace Aura.Infrastructure.Persistence;
 
-public class AuraDbContext : DbContext
+public class AuraDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>
 {
     public DbSet<Event> Events => Set<Event>();
     public DbSet<CitizenReport> CitizenReports => Set<CitizenReport>();
     public DbSet<DistrictRisk> DistrictRisks => Set<DistrictRisk>();
     public DbSet<Operator> Operators => Set<Operator>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     public AuraDbContext(DbContextOptions<AuraDbContext> options) : base(options)
     {
@@ -22,6 +25,17 @@ public class AuraDbContext : DbContext
 
         modelBuilder.HasPostgresExtension("postgis");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AuraDbContext).Assembly);
+
+        modelBuilder.Entity<RefreshToken>(builder =>
+        {
+            builder.ToTable("RefreshTokens");
+            builder.HasKey(t => t.Id);
+            builder.Property(t => t.Token).IsRequired().HasMaxLength(500);
+            builder.HasOne(t => t.User)
+                .WithMany(u => u.RefreshTokens)
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {

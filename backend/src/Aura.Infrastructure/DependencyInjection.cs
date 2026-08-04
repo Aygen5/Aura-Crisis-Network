@@ -1,8 +1,10 @@
 using Aura.Application.Common.Interfaces;
 using Aura.Infrastructure.BackgroundJobs;
+using Aura.Infrastructure.Identity;
 using Aura.Infrastructure.Persistence;
 using Aura.Infrastructure.Persistence.Repositories;
 using Aura.Infrastructure.Services;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +23,23 @@ public static class DependencyInjection
         services.AddDbContext<AuraDbContext>(options =>
             options.UseNpgsql(connectionString, npgsqlOptions =>
                 npgsqlOptions.UseNetTopologySuite()));
+
+        services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
+        {
+            options.Password.RequireDigit = true;
+            options.Password.RequireLowercase = true;
+            options.Password.RequireUppercase = false;
+            options.Password.RequireNonAlphanumeric = false;
+            options.Password.RequiredLength = 6;
+            options.User.RequireUniqueEmail = true;
+        })
+        .AddEntityFrameworkStores<AuraDbContext>()
+        .AddDefaultTokenProviders();
+
+        services.AddHttpContextAccessor();
+        services.AddScoped<ITokenProvider, JwtTokenProvider>();
+        services.AddScoped<IIdentityService, IdentityService>();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IEventRepository, EventRepository>();
