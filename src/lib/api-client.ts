@@ -65,6 +65,16 @@ export interface CreateReportRequest {
   summary: string;
 }
 
+export interface AuthResponseDto {
+  userId: string;
+  email: string;
+  fullName: string;
+  accessToken: string;
+  refreshToken: string;
+  refreshTokenExpiresAt: string;
+  roles: string[];
+}
+
 export const disasterMeta: Record<DisasterType, { label: string; icon: string; color: string; badgeClass: string }> = {
   Earthquake: { label: "Deprem", icon: "Activity", color: "#ef4444", badgeClass: "bg-red-500/10 text-red-400 border-red-500/20" },
   Flood: { label: "Sel / Taşkın", icon: "Waves", color: "#0ea5e9", badgeClass: "bg-sky-500/10 text-sky-400 border-sky-500/20" },
@@ -75,18 +85,55 @@ export const disasterMeta: Record<DisasterType, { label: string; icon: string; c
 };
 
 const API_BASE_URL = "http://localhost:5000/api/v1";
+const AUTH_STORAGE_KEY = "aura_auth_session";
+
+export function getStoredAuth(): AuthResponseDto | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredAuth(authData: AuthResponseDto): void {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
+  }
+}
+
+export function clearStoredAuth(): void {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+  }
+}
+
+export function isAuthenticated(): boolean {
+  const auth = getStoredAuth();
+  return auth !== null && !!auth.accessToken;
+}
 
 async function fetchJson<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  const auth = getStoredAuth();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...((options?.headers as Record<string, string>) || {})
+  };
+
+  if (auth?.accessToken) {
+    headers["Authorization"] = `Bearer ${auth.accessToken}`;
+  }
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...options?.headers
-    },
-    ...options
+    ...options,
+    headers
   });
 
   if (!response.ok) {
-    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    const errData = await response.json().catch(() => null);
+    const msg = errData?.errors?.[0] || errData?.Message || `API Error: ${response.status} ${response.statusText}`;
+    throw new Error(msg);
   }
 
   if (response.status === 204) {
@@ -94,6 +141,39 @@ async function fetchJson<T>(endpoint: string, options?: RequestInit): Promise<T>
   }
 
   return response.json();
+}
+
+export async function loginUser(email: string, password: string): Promise<AuthResponseDto> {
+  const response = await fetchJson<AuthResponseDto>("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password })
+  });
+  setStoredAuth(response);
+  return response;
+}
+
+export async function registerUser(email: string, password: string, fullName: string, role: string = "Citizen"): Promise<{ userId: string }> {
+  return fetchJson<{ userId: string }>("/auth/register", {
+    method: "POST",
+    body: JSON.stringify({ email, password, fullName, role })
+  });
+}
+
+export async function refreshAuthToken(): Promise<AuthResponseDto | null> {
+  const auth = getStoredAuth();
+  if (!auth) return null;
+
+  try {
+    const response = await fetchJson<AuthResponseDto>("/auth/refresh-token", {
+      method: "POST",
+      body: JSON.stringify({ accessToken: auth.accessToken, refreshToken: auth.refreshToken })
+    });
+    setStoredAuth(response);
+    return response;
+  } catch {
+    clearStoredAuth();
+    return null;
+  }
 }
 
 export async function fetchActiveEvents(): Promise<EventDto[]> {

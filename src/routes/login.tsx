@@ -1,27 +1,56 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Lock, ShieldAlert, TriangleAlert } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { ArrowRight, Lock, ShieldAlert } from "lucide-react";
 import { StatusDot } from "@/components/aura/primitives";
-import { AuthShell, AuthField } from "@/components/aura/AuthShell";
+import { AuthShell } from "@/components/aura/AuthShell";
+import { isAuthenticated, loginUser } from "@/lib/api-client";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Sign in — Aura Crisis Network" },
+      { title: "Giriş Yap — Aura Crisis Network" },
       {
         name: "description",
-        content:
-          "Secure operator sign-in for the Aura Crisis Network emergency coordination platform.",
+        content: "Aura Crisis Network kriz yönetim platformu kullanıcı girişi.",
       },
-      { property: "og:title", content: "Sign in — Aura Crisis Network" },
-      { property: "og:description", content: "Secure operator access to the crisis command center." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Login,
 });
 
 function Login() {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      navigate({ to: "/" });
+    }
+  }, [navigate]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email || !password) {
+      setError("Lütfen e-posta ve şifre giriniz.");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      await loginUser(email, password);
+      navigate({ to: "/" });
+    } catch (err: any) {
+      setError(err?.message || "Giriş başarısız. Lütfen bilgilerinizi kontrol ediniz.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <AuthShell>
       <div className="glass rounded-xl p-8">
@@ -31,63 +60,74 @@ function Login() {
           </span>
           <div>
             <div className="label-xs">Aura Crisis Network</div>
-            <h1 className="mt-1.5 text-lg font-semibold tracking-tight">Sign in to your account</h1>
+            <h1 className="mt-1.5 text-lg font-semibold tracking-tight">Hesabınıza Giriş Yapın</h1>
             <p className="mt-1 text-[13px] text-muted-foreground">
-              Access restricted to authorized personnel only
+              Canlı afet komuta merkezine erişmek için bilgilerinizi giriniz.
             </p>
           </div>
         </div>
 
-        <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
-          <AuthField label="Email Address" placeholder="officer@afad.gov.tr" type="email" />
-          <AuthField label="Password" placeholder="••••••••••••" type="password" />
+        {error && (
+          <div className="mb-5 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-[13px] text-red-400">
+            {error}
+          </div>
+        )}
 
-          <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
-              <input
-                type="checkbox"
-                className="h-3.5 w-3.5 rounded border-border bg-transparent accent-foreground"
-              />
-              Keep me signed in
+        <form className="space-y-5" onSubmit={handleSubmit}>
+          <div>
+            <label className="mb-1.5 block text-[12px] font-medium text-foreground">
+              E-Posta Adresi
             </label>
-            <button type="button" className="text-[12px] text-muted-foreground hover:text-foreground">
-              Forgot password
-            </button>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="operator@aura.network"
+              required
+              className="w-full rounded-lg border border-border bg-background/50 px-3.5 py-2 text-[13px] outline-none transition-colors focus:border-ring"
+            />
           </div>
 
-          <Link
-            to="/"
-            className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-foreground text-[13px] font-medium text-background transition-all duration-200 hover:opacity-90"
-          >
-            Sign In
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </form>
+          <div>
+            <label className="mb-1.5 block text-[12px] font-medium text-foreground">
+              Şifre
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••••••"
+              required
+              className="w-full rounded-lg border border-border bg-background/50 px-3.5 py-2 text-[13px] outline-none transition-colors focus:border-ring"
+            />
+          </div>
 
-        <div className="mt-5 flex items-start gap-2.5 rounded-lg border border-warning/25 bg-warning/[0.07] px-3.5 py-3">
-          <TriangleAlert className="mt-px h-3.5 w-3.5 shrink-0 text-warning" strokeWidth={1.8} />
-          <p className="text-[12px] leading-relaxed text-muted-foreground">
-            <span className="font-medium text-warning">DEMO ACCESS:</span> Use any email and password
-            to enter the platform.
-          </p>
-        </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-foreground text-[13px] font-medium text-background transition-all duration-200 hover:opacity-90 disabled:opacity-50"
+          >
+            {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
+            <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        </form>
 
         <div className="mt-6 flex items-center gap-2 border-t border-border pt-5 text-[11px] text-muted-foreground">
           <Lock className="h-3 w-3" />
-          Hardware key required for privileged operations
+          JWT 256-Bit SSL Şifreli Güvenli Bağlantı
         </div>
       </div>
 
       <p className="mt-6 text-center text-[12px] text-muted-foreground">
-        Don&apos;t have an account?{" "}
+        Hesabınız yok mu?{" "}
         <Link to="/signup" className="font-medium text-foreground hover:underline">
-          Request access (Sign up)
+          Hemen Kayıt Olun (Sign up)
         </Link>
       </p>
 
       <div className="mt-4 flex items-center justify-center gap-2 text-[11px] text-muted-foreground">
         <StatusDot tone="online" pulse={false} />
-        All coordination services operational
+        Canlı PostgreSQL & SignalR Sunucusu Aktif
       </div>
     </AuthShell>
   );

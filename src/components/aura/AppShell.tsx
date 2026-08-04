@@ -1,15 +1,16 @@
-import { Link, useRouterState } from "@tanstack/react-router";
-import { Bell, ChevronDown, Search, ShieldAlert } from "lucide-react";
-import type { ReactNode } from "react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useEffect, useState, type ReactNode } from "react";
+import { Bell, LogOut, Search, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { StatusDot } from "./primitives";
+import { AuraBadge, StatusDot } from "./primitives";
+import { clearStoredAuth, getStoredAuth, isAuthenticated, type AuthResponseDto } from "@/lib/api-client";
 
 const nav = [
-  { to: "/", label: "Command Center" },
-  { to: "/reports", label: "Report Center" },
-  { to: "/risk", label: "Risk Analysis" },
-  { to: "/analytics", label: "Analytics" },
-  { to: "/settings", label: "Settings" },
+  { to: "/", label: "Komuta Merkezi" },
+  { to: "/reports", label: "İhbar Yönetimi" },
+  { to: "/risk", label: "Risk Analizi" },
+  { to: "/analytics", label: "Analitik" },
+  { to: "/settings", label: "Ayarlar" },
 ] as const;
 
 export function AuraLogo({ className }: { className?: string }) {
@@ -27,7 +28,22 @@ export function AuraLogo({ className }: { className?: string }) {
 }
 
 export function TopNav({ floating = false }: { floating?: boolean }) {
+  const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [currentUser, setCurrentUser] = useState<AuthResponseDto | null>(null);
+
+  useEffect(() => {
+    setCurrentUser(getStoredAuth());
+  }, []);
+
+  function handleLogout() {
+    clearStoredAuth();
+    navigate({ to: "/login" });
+  }
+
+  const userInitials = currentUser?.fullName
+    ? currentUser.fullName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+    : "US";
 
   return (
     <header
@@ -35,7 +51,7 @@ export function TopNav({ floating = false }: { floating?: boolean }) {
         "z-40 flex h-14 items-center gap-6 px-6",
         floating
           ? "glass absolute inset-x-0 top-0 rounded-none border-x-0 border-t-0"
-          : "sticky top-0 border-b border-border bg-background/85 backdrop-blur-xl",
+          : "sticky top-0 border-b border-border bg-background/85 backdrop-blur-xl"
       )}
     >
       <AuraLogo />
@@ -51,7 +67,7 @@ export function TopNav({ floating = false }: { floating?: boolean }) {
                 "rounded-md px-3 py-1.5 text-[13px] transition-colors duration-200",
                 active
                   ? "bg-secondary text-foreground"
-                  : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                  : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
               )}
             >
               {item.label}
@@ -64,12 +80,9 @@ export function TopNav({ floating = false }: { floating?: boolean }) {
         <label className="group hidden h-9 w-80 items-center gap-2.5 rounded-lg border border-border bg-background/60 px-3 transition-colors duration-200 focus-within:border-ring md:flex">
           <Search className="h-3.5 w-3.5 text-muted-foreground" />
           <input
-            placeholder="Search city, district or coordinates"
+            placeholder="İl, ilçe veya koordinat ara..."
             className="w-full bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
           />
-          <kbd className="rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">
-            ⌘K
-          </kbd>
         </label>
 
         <button className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors duration-200 hover:bg-secondary hover:text-foreground">
@@ -77,18 +90,25 @@ export function TopNav({ floating = false }: { floating?: boolean }) {
           <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-critical" />
         </button>
 
-        <button className="flex items-center gap-2 rounded-lg border border-border py-1 pl-1 pr-2 transition-colors duration-200 hover:bg-secondary">
-          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-secondary text-[11px] font-semibold">
-            EK
+        <div className="flex items-center gap-2 rounded-lg border border-border py-1 pl-1 pr-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-secondary text-[11px] font-semibold text-primary">
+            {userInitials}
           </span>
           <span className="hidden text-left leading-tight sm:block">
-            <span className="block text-[12px] font-medium">E. Karaca</span>
+            <span className="block text-[12px] font-medium">{currentUser?.fullName || "Oturum Açıldı"}</span>
             <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-              <StatusDot pulse={false} className="h-1.5 w-1.5" /> Duty Officer
+              <StatusDot pulse={false} className="h-1.5 w-1.5" />
+              {currentUser?.roles?.[0] || "Citizen"}
             </span>
           </span>
-          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-        </button>
+          <button
+            onClick={handleLogout}
+            title="Çıkış Yap"
+            className="ml-2 p-1 text-muted-foreground hover:text-red-400"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
     </header>
   );
@@ -105,6 +125,14 @@ export function AppShell({
   description?: string;
   actions?: ReactNode;
 }) {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      navigate({ to: "/login" });
+    }
+  }, [navigate]);
+
   return (
     <div className="min-h-screen bg-background">
       <TopNav />

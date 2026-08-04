@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   Activity,
@@ -21,6 +21,7 @@ import {
   disasterMeta,
   fetchActiveEvents,
   fetchAnalyticsSummary,
+  isAuthenticated,
   type AnalyticsSummaryDto,
   type EventDto,
 } from "@/lib/api-client";
@@ -70,6 +71,7 @@ const mapLayers = [
 ];
 
 function CommandCenter() {
+  const navigate = useNavigate();
   const [events, setEvents] = useState<EventDto[]>([]);
   const [summary, setSummary] = useState<AnalyticsSummaryDto | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -89,6 +91,11 @@ function CommandCenter() {
   const [notes, setNotes] = useState<NotificationItem[]>([]);
 
   useEffect(() => {
+    if (!isAuthenticated()) {
+      navigate({ to: "/login" });
+      return;
+    }
+
     async function loadData() {
       try {
         const [evList, sumData] = await Promise.all([
@@ -139,7 +146,7 @@ function CommandCenter() {
       unsubEvent();
       unsubReport();
     };
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     if (!playing) return;
