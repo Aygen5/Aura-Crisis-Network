@@ -3,6 +3,7 @@ using Aura.Application.Events.Commands.EscalateEvent;
 using Aura.Application.Events.Queries.GetActiveEvents;
 using Aura.Application.Events.Queries.GetEventById;
 using Aura.Application.Events.Queries.GetEventsByBoundingBox;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Aura.WebApi.Controllers;
@@ -10,6 +11,7 @@ namespace Aura.WebApi.Controllers;
 public class EventsController : BaseApiController
 {
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult<IReadOnlyList<EventDto>>> GetActiveEvents(CancellationToken cancellationToken)
     {
         var result = await Mediator.Send(new GetActiveEventsQuery(), cancellationToken);
@@ -17,6 +19,7 @@ public class EventsController : BaseApiController
     }
 
     [HttpGet("{id:guid}")]
+    [AllowAnonymous]
     public async Task<ActionResult<EventDto>> GetEventById(Guid id, CancellationToken cancellationToken)
     {
         var result = await Mediator.Send(new GetEventByIdQuery(id), cancellationToken);
@@ -25,6 +28,7 @@ public class EventsController : BaseApiController
     }
 
     [HttpGet("bounding-box")]
+    [AllowAnonymous]
     public async Task<ActionResult<IReadOnlyList<EventDto>>> GetEventsByBoundingBox(
         [FromQuery] double minLat,
         [FromQuery] double minLng,
@@ -38,6 +42,7 @@ public class EventsController : BaseApiController
     }
 
     [HttpPost("{id:guid}/escalate")]
+    [Authorize(Roles = "Operator,Admin")]
     public async Task<IActionResult> EscalateEvent(Guid id, CancellationToken cancellationToken)
     {
         var success = await Mediator.Send(new EscalateEventCommand(id), cancellationToken);

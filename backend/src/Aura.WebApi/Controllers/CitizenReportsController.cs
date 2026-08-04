@@ -3,6 +3,7 @@ using Aura.Application.Reports.Commands.CreateCitizenReport;
 using Aura.Application.Reports.Commands.UpdateReportStatus;
 using Aura.Application.Reports.Queries.GetReportsByStatus;
 using Aura.Domain.Enums;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Aura.WebApi.Controllers;
@@ -11,6 +12,7 @@ namespace Aura.WebApi.Controllers;
 public class CitizenReportsController : BaseApiController
 {
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult<IReadOnlyList<CitizenReportDto>>> GetReportsByStatus(
         [FromQuery] ReportStatus status = ReportStatus.Pending,
         CancellationToken cancellationToken = default)
@@ -21,6 +23,7 @@ public class CitizenReportsController : BaseApiController
     }
 
     [HttpPost]
+    [AllowAnonymous]
     public async Task<ActionResult<CitizenReportDto>> CreateReport(
         [FromBody] CreateCitizenReportCommand command,
         CancellationToken cancellationToken)
@@ -30,6 +33,7 @@ public class CitizenReportsController : BaseApiController
     }
 
     [HttpPatch("{id:guid}/status")]
+    [Authorize(Roles = "Operator,Admin")]
     public async Task<IActionResult> UpdateReportStatus(
         Guid id,
         [FromQuery] ReportStatus status,
