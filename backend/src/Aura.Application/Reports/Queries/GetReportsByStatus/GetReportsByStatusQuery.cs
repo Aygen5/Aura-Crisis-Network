@@ -32,7 +32,16 @@ public class GetReportsByStatusQueryHandler : IRequestHandler<GetReportsByStatus
             r.Status,
             r.CorroborationCount,
             r.Summary,
-            r.CreatedAt
+            r.CreatedAt,
+            r.Attachments.Select(a => new ReportAttachmentDto(
+                a.Id,
+                a.CitizenReportId,
+                a.FileName,
+                a.FileUrl,
+                a.ContentType,
+                a.FileSizeBytes,
+                a.UploadedAt
+            )).ToList()
         )).ToList();
     }
 }

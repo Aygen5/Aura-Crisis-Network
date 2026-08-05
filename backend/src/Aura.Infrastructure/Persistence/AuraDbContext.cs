@@ -11,6 +11,7 @@ public class AuraDbContext : IdentityDbContext<ApplicationUser, ApplicationRole,
 {
     public DbSet<Event> Events => Set<Event>();
     public DbSet<CitizenReport> CitizenReports => Set<CitizenReport>();
+    public DbSet<ReportAttachment> ReportAttachments => Set<ReportAttachment>();
     public DbSet<DistrictRisk> DistrictRisks => Set<DistrictRisk>();
     public DbSet<Operator> Operators => Set<Operator>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();

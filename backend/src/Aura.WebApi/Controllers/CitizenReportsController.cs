@@ -1,6 +1,7 @@
 using Aura.Application.DTOs;
 using Aura.Application.Reports.Commands.CreateCitizenReport;
 using Aura.Application.Reports.Commands.UpdateReportStatus;
+using Aura.Application.Reports.Commands.UploadReportAttachment;
 using Aura.Application.Reports.Queries.GetReportsByStatus;
 using Aura.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
@@ -30,6 +31,36 @@ public class CitizenReportsController : BaseApiController
     {
         var result = await Mediator.Send(command, cancellationToken);
         return CreatedAtAction(nameof(GetReportsByStatus), new { status = result.Status }, result);
+    }
+
+    [HttpPost("{id:guid}/attachments")]
+    [AllowAnonymous]
+    public async Task<ActionResult<ReportAttachmentDto>> UploadAttachment(
+        Guid id,
+        IFormFile file,
+        CancellationToken cancellationToken)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest(new { Message = "No file was uploaded." });
+        }
+
+        using var stream = file.OpenReadStream();
+        var command = new UploadReportAttachmentCommand(
+            id,
+            stream,
+            file.FileName,
+            file.ContentType,
+            file.Length
+        );
+
+        var result = await Mediator.Send(command, cancellationToken);
+        if (result == null)
+        {
+            return NotFound(new { Message = $"Report with ID {id} was not found." });
+        }
+
+        return Ok(result);
     }
 
     [HttpPatch("{id:guid}/status")]

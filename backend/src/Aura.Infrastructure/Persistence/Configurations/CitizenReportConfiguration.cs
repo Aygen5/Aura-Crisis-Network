@@ -51,5 +51,10 @@ public class CitizenReportConfiguration : IEntityTypeConfiguration<CitizenReport
 
         builder.Property(r => r.Summary)
             .HasMaxLength(2000);
+
+        builder.HasMany(r => r.Attachments)
+            .WithOne()
+            .HasForeignKey(a => a.CitizenReportId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

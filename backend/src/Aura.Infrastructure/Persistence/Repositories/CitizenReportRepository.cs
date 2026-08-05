@@ -17,12 +17,15 @@ public class CitizenReportRepository : ICitizenReportRepository
 
     public async Task<CitizenReport?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _context.CitizenReports.FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+        return await _context.CitizenReports
+            .Include(r => r.Attachments)
+            .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
     }
 
     public async Task<IReadOnlyList<CitizenReport>> GetReportsByStatusAsync(ReportStatus status, CancellationToken cancellationToken = default)
     {
         return await _context.CitizenReports
+            .Include(r => r.Attachments)
             .Where(r => r.Status == status)
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync(cancellationToken);
@@ -31,6 +34,7 @@ public class CitizenReportRepository : ICitizenReportRepository
     public async Task<IReadOnlyList<CitizenReport>> GetNearbyReportsAsync(GeoPoint location, double radiusInMeters, CancellationToken cancellationToken = default)
     {
         return await _context.CitizenReports
+            .Include(r => r.Attachments)
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync(cancellationToken);
     }

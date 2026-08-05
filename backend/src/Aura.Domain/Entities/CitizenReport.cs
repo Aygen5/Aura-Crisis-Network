@@ -6,6 +6,8 @@ namespace Aura.Domain.Entities;
 
 public class CitizenReport : BaseEntity
 {
+    private readonly List<ReportAttachment> _attachments = new();
+
     public string Title { get; private set; }
     public DisasterType Type { get; private set; }
     public string District { get; private set; }
@@ -15,6 +17,8 @@ public class CitizenReport : BaseEntity
     public ReportStatus Status { get; private set; }
     public int CorroborationCount { get; private set; }
     public string Summary { get; private set; }
+
+    public IReadOnlyCollection<ReportAttachment> Attachments => _attachments.AsReadOnly();
 
     #pragma warning disable CS8618
     private CitizenReport() { }
@@ -60,6 +64,13 @@ public class CitizenReport : BaseEntity
     public void IncrementCorroboration()
     {
         CorroborationCount++;
+        MarkUpdated();
+    }
+
+    public void AddAttachment(string fileName, string fileUrl, string contentType, long fileSizeBytes)
+    {
+        var attachment = new ReportAttachment(Id, fileName, fileUrl, contentType, fileSizeBytes);
+        _attachments.Add(attachment);
         MarkUpdated();
     }
 }
