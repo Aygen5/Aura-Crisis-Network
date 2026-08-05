@@ -20,6 +20,16 @@ export interface EventDto {
   escalatedAt?: string;
 }
 
+export interface ReportAttachmentDto {
+  id: string;
+  citizenReportId: string;
+  fileName: string;
+  fileUrl: string;
+  contentType: string;
+  fileSizeBytes: number;
+  uploadedAt: string;
+}
+
 export interface CitizenReportDto {
   id: string;
   title: string;
@@ -33,6 +43,7 @@ export interface CitizenReportDto {
   corroborationCount: number;
   summary: string;
   createdAt: string;
+  attachments?: ReportAttachmentDto[];
 }
 
 export interface DistrictRiskDto {
@@ -117,9 +128,12 @@ export function isAuthenticated(): boolean {
 async function fetchJson<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const auth = getStoredAuth();
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
     ...((options?.headers as Record<string, string>) || {})
   };
+
+  if (!(options?.body instanceof FormData) && !headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
 
   if (auth?.accessToken) {
     headers["Authorization"] = `Bearer ${auth.accessToken}`;
@@ -205,6 +219,16 @@ export async function createCitizenReport(request: CreateReportRequest): Promise
   return fetchJson<CitizenReportDto>("/reports", {
     method: "POST",
     body: JSON.stringify(request)
+  });
+}
+
+export async function uploadReportAttachment(reportId: string, file: File): Promise<ReportAttachmentDto> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return fetchJson<ReportAttachmentDto>(`/reports/${reportId}/attachments`, {
+    method: "POST",
+    body: formData
   });
 }
 

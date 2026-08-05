@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Download, Filter, Search, CheckCircle2, XCircle } from "lucide-react";
+import { Download, Filter, Search, CheckCircle2, XCircle, Plus, Paperclip } from "lucide-react";
 import { AppShell } from "@/components/aura/AppShell";
 import { DisasterIcon } from "@/components/aura/DisasterIcon";
 import { AuraBadge, PanelCard } from "@/components/aura/primitives";
+import { CreateReportModal } from "@/components/aura/CreateReportModal";
+import { ReportDetailModal } from "@/components/aura/ReportDetailModal";
 import {
   disasterMeta,
   fetchReportsByStatus,
@@ -46,6 +48,8 @@ function ReportCenter() {
   const [reportsList, setReportsList] = useState<CitizenReportDto[]>([]);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<CitizenReportDto | null>(null);
 
   async function loadReports() {
     setLoading(true);
@@ -79,7 +83,8 @@ function ReportCenter() {
     };
   }, [tab]);
 
-  async function handleVerify(id: string) {
+  async function handleVerify(e: React.MouseEvent, id: string) {
+    e.stopPropagation();
     try {
       await updateReportStatus(id, "Verified");
       loadReports();
@@ -87,7 +92,8 @@ function ReportCenter() {
     }
   }
 
-  async function handleReject(id: string) {
+  async function handleReject(e: React.MouseEvent, id: string) {
+    e.stopPropagation();
     try {
       await updateReportStatus(id, "Rejected");
       loadReports();
@@ -109,11 +115,19 @@ function ReportCenter() {
   return (
     <AppShell
       title="İhbar Yönetim Merkezi"
-      description="Saha ve vatandaşlardan gelen canlı ihbarların nöbetçi masa tarafından doğrulanması."
+      description="Saha ve vatandaşlardan gelen canlı ihbarların ve ekli medyanın nöbetçi masa tarafından doğrulanması."
       actions={
-        <button className="flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-[13px] text-muted-foreground transition-colors duration-200 hover:bg-secondary hover:text-foreground">
-          <Download className="h-3.5 w-3.5" /> Dışa Aktar CSV
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCreateModalOpen(true)}
+            className="flex h-9 items-center gap-2 rounded-lg bg-primary px-3 text-[13px] font-medium text-primary-foreground transition-all duration-200 hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" /> Yeni İhbar Bildir
+          </button>
+          <button className="flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-[13px] text-muted-foreground transition-colors duration-200 hover:bg-secondary hover:text-foreground">
+            <Download className="h-3.5 w-3.5" /> Dışa Aktar CSV
+          </button>
+        </div>
       }
     >
       <PanelCard className="overflow-hidden">
@@ -156,7 +170,7 @@ function ReportCenter() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-border">
-              {["İhbar Başlığı", "Tür", "İlçe", "Bildiren", "Tarih", "Durum", "İşlemler"].map((h) => (
+              {["İhbar Başlığı", "Tür", "İlçe", "Bildiren", "Tarih", "Medya", "Durum", "İşlemler"].map((h) => (
                 <th key={h} className="label-xs px-6 py-3 text-left font-medium">
                   {h}
                 </th>
@@ -169,10 +183,13 @@ function ReportCenter() {
               return (
                 <tr
                   key={r.id}
-                  className="border-b border-border/70 transition-colors duration-200 last:border-0 hover:bg-secondary/50"
+                  onClick={() => setSelectedReport(r)}
+                  className="group border-b border-border/70 transition-colors duration-200 last:border-0 hover:bg-secondary/50 cursor-pointer"
                 >
                   <td className="px-6 py-4">
-                    <div className="text-[13px] font-medium">{r.title}</div>
+                    <div className="text-[13px] font-medium group-hover:text-primary transition-colors">
+                      {r.title}
+                    </div>
                     <div className="num mt-0.5 text-[11px] text-muted-foreground">{r.id}</div>
                   </td>
                   <td className="px-6 py-4">
@@ -192,19 +209,28 @@ function ReportCenter() {
                     {new Date(r.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                   </td>
                   <td className="px-6 py-4">
+                    {r.attachments && r.attachments.length > 0 ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded-full">
+                        <Paperclip className="h-3 w-3" /> {r.attachments.length} Dosya
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground">-</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4">
                     <AuraBadge tone={statusTone[r.status]}>{r.status}</AuraBadge>
                   </td>
                   <td className="px-6 py-4 text-right">
                     {r.status === "Pending" ? (
                       <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={() => handleVerify(r.id)}
+                          onClick={(e) => handleVerify(e, r.id)}
                           className="flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] text-emerald-400 hover:bg-emerald-500/20"
                         >
                           <CheckCircle2 className="h-3 w-3" /> Onayla
                         </button>
                         <button
-                          onClick={() => handleReject(r.id)}
+                          onClick={(e) => handleReject(e, r.id)}
                           className="flex items-center gap-1 rounded-md border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-[11px] text-red-400 hover:bg-red-500/20"
                         >
                           <XCircle className="h-3 w-3" /> Reddet
@@ -226,6 +252,21 @@ function ReportCenter() {
           </span>
         </div>
       </PanelCard>
+
+      <CreateReportModal
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onSuccess={() => loadReports()}
+      />
+
+      <ReportDetailModal
+        report={selectedReport}
+        onClose={() => setSelectedReport(null)}
+        onRefresh={() => {
+          loadReports();
+          setSelectedReport(null);
+        }}
+      />
     </AppShell>
   );
 }

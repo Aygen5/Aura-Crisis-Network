@@ -17,6 +17,7 @@ import { MapCanvas } from "@/components/aura/MapCanvas";
 import { DisasterIcon } from "@/components/aura/DisasterIcon";
 import { TopNav } from "@/components/aura/AppShell";
 import { AuraBadge, StatCard, StatusDot } from "@/components/aura/primitives";
+import { CreateReportModal } from "@/components/aura/CreateReportModal";
 import {
   disasterMeta,
   fetchActiveEvents,
@@ -89,23 +90,24 @@ function CommandCenter() {
   const [win, setWin] = useState("24 Hours");
   const [speed, setSpeed] = useState("1x");
   const [notes, setNotes] = useState<NotificationItem[]>([]);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+
+  async function loadData() {
+    try {
+      const [evList, sumData] = await Promise.all([
+        fetchActiveEvents(),
+        fetchAnalyticsSummary(),
+      ]);
+      setEvents(evList);
+      setSummary(sumData);
+    } catch {
+    }
+  }
 
   useEffect(() => {
     if (!isAuthenticated()) {
       navigate({ to: "/login" });
       return;
-    }
-
-    async function loadData() {
-      try {
-        const [evList, sumData] = await Promise.all([
-          fetchActiveEvents(),
-          fetchAnalyticsSummary(),
-        ]);
-        setEvents(evList);
-        setSummary(sumData);
-      } catch {
-      }
     }
 
     loadData();
@@ -278,13 +280,13 @@ function CommandCenter() {
               <span className="num text-[11px] text-muted-foreground">Bağlı</span>
             </li>
           </ul>
-          <Link
-            to="/reports"
+          <button
+            onClick={() => setCreateModalOpen(true)}
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-[13px] font-medium text-primary-foreground transition-all duration-200 hover:opacity-90"
           >
             <Plus className="h-4 w-4" />
             Yeni İhbar Oluştur
-          </Link>
+          </button>
         </section>
 
         <section className="glass flex min-h-0 flex-1 flex-col rounded-xl">
@@ -419,6 +421,12 @@ function CommandCenter() {
           </Link>
         </div>
       )}
+
+      <CreateReportModal
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onSuccess={() => loadData()}
+      />
     </div>
   );
 }
