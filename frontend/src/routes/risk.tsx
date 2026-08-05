@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import {
   Area,
   AreaChart,
@@ -18,8 +18,17 @@ import { MapCanvas } from "@/components/aura/MapCanvas";
 import { AuraBadge, PanelCard } from "@/components/aura/primitives";
 import { useRiskAnalysis } from "@/queries/useRiskQuery";
 import { useActiveEvents } from "@/queries/useEventsQuery";
+import { isAuthenticated, hasAnyRole } from "@/lib/api-client";
 
 export const Route = createFileRoute("/risk")({
+  beforeLoad: () => {
+    if (!isAuthenticated()) {
+      throw redirect({ to: "/login" });
+    }
+    if (!hasAnyRole(["Operator", "Admin"])) {
+      throw redirect({ to: "/" });
+    }
+  },
   head: () => ({
     meta: [
       { title: "Risk Analysis — Aura Crisis Network" },

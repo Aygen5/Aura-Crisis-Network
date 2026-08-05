@@ -1,11 +1,16 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { AppShell } from "@/components/aura/AppShell";
 import { AuraBadge, PanelCard } from "@/components/aura/primitives";
-import { getStoredAuth, type AuthResponseDto } from "@/lib/api-client";
+import { getStoredAuth, isAuthenticated, type AuthResponseDto } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings")({
+  beforeLoad: () => {
+    if (!isAuthenticated()) {
+      throw redirect({ to: "/login" });
+    }
+  },
   head: () => ({
     meta: [
       { title: "Settings — Aura Crisis Network" },

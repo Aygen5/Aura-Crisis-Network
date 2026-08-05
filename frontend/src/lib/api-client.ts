@@ -1,6 +1,6 @@
 export * from "@/types";
 export * from "@/constants";
-export { getStoredAuth, setStoredAuth, clearStoredAuth, isAuthenticated } from "./http-client";
+export { getStoredAuth, setStoredAuth, clearStoredAuth, isAuthenticated, getUserRoles, hasAnyRole } from "./http-client";
 export { authService } from "@/services/auth.service";
 export { eventsService } from "@/services/events.service";
 export { reportsService } from "@/services/reports.service";

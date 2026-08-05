@@ -1,13 +1,19 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, redirect } from "@tanstack/react-router";
 import { ArrowLeft, ExternalLink, MapPin } from "lucide-react";
 import { AppShell } from "@/components/aura/AppShell";
 import { MapCanvas } from "@/components/aura/MapCanvas";
 import { DisasterIcon } from "@/components/aura/DisasterIcon";
 import { AuraBadge, PanelCard, StatusDot } from "@/components/aura/primitives";
+import { HasRole } from "@/components/aura/HasRole";
 import { useEventById, useEscalateEvent, useActiveEvents } from "@/queries/useEventsQuery";
-import { disasterMeta, fetchEventById, type EventDto } from "@/lib/api-client";
+import { disasterMeta, fetchEventById, isAuthenticated, type EventDto } from "@/lib/api-client";
 
 export const Route = createFileRoute("/event/$id")({
+  beforeLoad: () => {
+    if (!isAuthenticated()) {
+      throw redirect({ to: "/login" });
+    }
+  },
   loader: async ({ params }): Promise<{ event: EventDto }> => {
     try {
       const event = await fetchEventById(params.id);
@@ -66,13 +72,15 @@ function EventDetail() {
           >
             <ArrowLeft className="h-3.5 w-3.5" /> Komuta Merkezi
           </Link>
-          <button
-            onClick={handleEscalate}
-            disabled={escalateMutation.isPending}
-            className="flex h-9 items-center gap-2 rounded-lg bg-red-600 px-4 text-[13px] font-medium text-white transition-opacity duration-200 hover:bg-red-700 disabled:opacity-50"
-          >
-            {escalateMutation.isPending ? "Yükseltiliyor..." : "Seviyeyi Yükselt (Escalate)"}
-          </button>
+          <HasRole roles={["Operator", "Admin"]}>
+            <button
+              onClick={handleEscalate}
+              disabled={escalateMutation.isPending}
+              className="flex h-9 items-center gap-2 rounded-lg bg-red-600 px-4 text-[13px] font-medium text-white transition-opacity duration-200 hover:bg-red-700 disabled:opacity-50"
+            >
+              {escalateMutation.isPending ? "Yükseltiliyor..." : "Seviyeyi Yükselt (Escalate)"}
+            </button>
+          </HasRole>
         </div>
       }
     >

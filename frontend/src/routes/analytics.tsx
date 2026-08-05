@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   Area,
@@ -18,9 +18,18 @@ import { AppShell } from "@/components/aura/AppShell";
 import { PanelCard, StatCard } from "@/components/aura/primitives";
 import { useAnalyticsSummary } from "@/queries/useAnalyticsQuery";
 import { useActiveEvents } from "@/queries/useEventsQuery";
+import { isAuthenticated, hasAnyRole } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/analytics")({
+  beforeLoad: () => {
+    if (!isAuthenticated()) {
+      throw redirect({ to: "/login" });
+    }
+    if (!hasAnyRole(["Operator", "Admin"])) {
+      throw redirect({ to: "/" });
+    }
+  },
   head: () => ({
     meta: [
       { title: "Analytics — Aura Crisis Network" },
@@ -86,8 +95,6 @@ function Analytics() {
   const [range, setRange] = useState<(typeof ranges)[number]>("Haftalık");
   const { data: summary } = useAnalyticsSummary();
   const { data: events = [] } = useActiveEvents();
-
-  const totalReports = (summary?.verifiedReportsCount || 0) + (summary?.pendingReportsCount || 0) + (summary?.rejectedReportsCount || 0);
 
   const distribution = [
     { name: "Aktif Afetler", value: summary?.totalActiveEvents || events.length, color: "#ef4444" },

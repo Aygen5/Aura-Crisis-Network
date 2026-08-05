@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { X, CheckCircle2, XCircle, Upload, MapPin, Phone, User, Calendar, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
-import { AuraBadge, StatusDot } from "./primitives";
+import { AuraBadge } from "./primitives";
 import { AttachmentGallery } from "./AttachmentGallery";
 import { FileUploadZone } from "./FileUploadZone";
+import { HasRole } from "./HasRole";
 import {
   updateReportStatus,
   uploadReportAttachment,
@@ -55,7 +56,7 @@ export function ReportDetailModal({ report, onClose, onRefresh }: ReportDetailMo
       for (const file of newFiles) {
         await uploadReportAttachment(report.id, file);
       }
-      toast.success("Yeni medyo/dosyalar başarıyla eklendi.");
+      toast.success("Yeni medya/dosyalar başarıyla eklendi.");
       setNewFiles([]);
       onRefresh?.();
     } catch (err: any) {
@@ -164,27 +165,29 @@ export function ReportDetailModal({ report, onClose, onRefresh }: ReportDetailMo
           </div>
 
           {report.status === "Pending" && (
-            <div className="flex items-center justify-between border-t border-border pt-4">
-              <span className="text-[12px] text-muted-foreground">
-                Nöbetçi Masa İşlemi:
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleStatusChange("Verified")}
-                  disabled={actionLoading}
-                  className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-[12px] font-medium text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50"
-                >
-                  <CheckCircle2 className="h-4 w-4" /> İhbarı Onayla
-                </button>
-                <button
-                  onClick={() => handleStatusChange("Rejected")}
-                  disabled={actionLoading}
-                  className="flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-[12px] font-medium text-red-400 hover:bg-red-500/20 disabled:opacity-50"
-                >
-                  <XCircle className="h-4 w-4" /> İhbarı Reddet
-                </button>
+            <HasRole roles={["Operator", "Admin"]}>
+              <div className="flex items-center justify-between border-t border-border pt-4">
+                <span className="text-[12px] text-muted-foreground">
+                  Nöbetçi Masa İşlemi:
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleStatusChange("Verified")}
+                    disabled={actionLoading}
+                    className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-[12px] font-medium text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50"
+                  >
+                    <CheckCircle2 className="h-4 w-4" /> İhbarı Onayla
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange("Rejected")}
+                    disabled={actionLoading}
+                    className="flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-[12px] font-medium text-red-400 hover:bg-red-500/20 disabled:opacity-50"
+                  >
+                    <XCircle className="h-4 w-4" /> İhbarı Reddet
+                  </button>
+                </div>
               </div>
-            </div>
+            </HasRole>
           )}
         </div>
       </div>

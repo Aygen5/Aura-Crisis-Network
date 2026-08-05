@@ -2,9 +2,9 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { Bell, LogOut, Search, ShieldAlert } from "lucide-react";
 import { NAVIGATION_CONFIG } from "@/config";
+import { hasAnyRole, clearStoredAuth, getStoredAuth, isAuthenticated, type AuthResponseDto } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { AuraBadge, StatusDot } from "./primitives";
-import { clearStoredAuth, getStoredAuth, isAuthenticated, type AuthResponseDto } from "@/lib/api-client";
 
 export function AuraLogo({ className }: { className?: string }) {
   return (
@@ -34,7 +34,9 @@ export function TopNav({ floating = false }: { floating?: boolean }) {
     navigate({ to: "/login" });
   }
 
-  const headerItems = NAVIGATION_CONFIG.filter((item) => item.showInHeader);
+  const headerItems = NAVIGATION_CONFIG.filter(
+    (item) => item.showInHeader && hasAnyRole(item.requiredRoles)
+  );
 
   const userInitials = currentUser?.fullName
     ? currentUser.fullName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)

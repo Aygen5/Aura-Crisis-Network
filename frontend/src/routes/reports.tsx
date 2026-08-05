@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Download, Filter, Search, CheckCircle2, XCircle, Plus, Paperclip } from "lucide-react";
 import { AppShell } from "@/components/aura/AppShell";
@@ -6,11 +6,17 @@ import { DisasterIcon } from "@/components/aura/DisasterIcon";
 import { AuraBadge, PanelCard } from "@/components/aura/primitives";
 import { CreateReportModal } from "@/components/aura/CreateReportModal";
 import { ReportDetailModal } from "@/components/aura/ReportDetailModal";
+import { HasRole } from "@/components/aura/HasRole";
 import { useReportsByStatus, useUpdateReportStatus } from "@/queries/useReportsQuery";
-import { disasterMeta, type CitizenReportDto, type ReportStatus } from "@/lib/api-client";
+import { disasterMeta, isAuthenticated, hasAnyRole, type CitizenReportDto, type ReportStatus } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/reports")({
+  beforeLoad: () => {
+    if (!isAuthenticated()) {
+      throw redirect({ to: "/login" });
+    }
+  },
   head: () => ({
     meta: [
       { title: "Report Center — Aura Crisis Network" },
@@ -189,20 +195,22 @@ function ReportCenter() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     {r.status === "Pending" ? (
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={(e) => handleVerify(e, r.id)}
-                          className="flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] text-emerald-400 hover:bg-emerald-500/20"
-                        >
-                          <CheckCircle2 className="h-3 w-3" /> Onayla
-                        </button>
-                        <button
-                          onClick={(e) => handleReject(e, r.id)}
-                          className="flex items-center gap-1 rounded-md border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-[11px] text-red-400 hover:bg-red-500/20"
-                        >
-                          <XCircle className="h-3 w-3" /> Reddet
-                        </button>
-                      </div>
+                      <HasRole roles={["Operator", "Admin"]} fallback={<span className="text-[11px] text-muted-foreground">Nöbetçi İncelemesi</span>}>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={(e) => handleVerify(e, r.id)}
+                            className="flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] text-emerald-400 hover:bg-emerald-500/20"
+                          >
+                            <CheckCircle2 className="h-3 w-3" /> Onayla
+                          </button>
+                          <button
+                            onClick={(e) => handleReject(e, r.id)}
+                            className="flex items-center gap-1 rounded-md border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-[11px] text-red-400 hover:bg-red-500/20"
+                          >
+                            <XCircle className="h-3 w-3" /> Reddet
+                          </button>
+                        </div>
+                      </HasRole>
                     ) : (
                       <span className="text-[11px] text-muted-foreground">Tamamlandı</span>
                     )}

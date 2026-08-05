@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   Activity,
@@ -28,6 +28,11 @@ import {
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
+  beforeLoad: () => {
+    if (!isAuthenticated()) {
+      throw redirect({ to: "/login" });
+    }
+  },
   head: () => ({
     meta: [
       { title: "Command Center — Aura Crisis Network" },
@@ -66,7 +71,6 @@ const mapLayers = [
 ];
 
 function CommandCenter() {
-  const navigate = useNavigate();
   const { data: events = [], refetch: refetchEvents } = useActiveEvents();
   const { data: summary, refetch: refetchSummary } = useAnalyticsSummary();
   const [selected, setSelected] = useState<string | null>(null);
@@ -87,11 +91,6 @@ function CommandCenter() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      navigate({ to: "/login" });
-      return;
-    }
-
     const unsubEvent = onEventCreated((newEvent) => {
       setNotes((prev) => [
         {
@@ -120,7 +119,7 @@ function CommandCenter() {
       unsubEvent();
       unsubReport();
     };
-  }, [navigate]);
+  }, []);
 
   useEffect(() => {
     if (!playing) return;
