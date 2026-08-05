@@ -1,17 +1,10 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { Bell, LogOut, Search, ShieldAlert } from "lucide-react";
+import { NAVIGATION_CONFIG } from "@/config";
 import { cn } from "@/lib/utils";
 import { AuraBadge, StatusDot } from "./primitives";
 import { clearStoredAuth, getStoredAuth, isAuthenticated, type AuthResponseDto } from "@/lib/api-client";
-
-const nav = [
-  { to: "/", label: "Komuta Merkezi" },
-  { to: "/reports", label: "İhbar Yönetimi" },
-  { to: "/risk", label: "Risk Analizi" },
-  { to: "/analytics", label: "Analitik" },
-  { to: "/settings", label: "Ayarlar" },
-] as const;
 
 export function AuraLogo({ className }: { className?: string }) {
   return (
@@ -41,6 +34,8 @@ export function TopNav({ floating = false }: { floating?: boolean }) {
     navigate({ to: "/login" });
   }
 
+  const headerItems = NAVIGATION_CONFIG.filter((item) => item.showInHeader);
+
   const userInitials = currentUser?.fullName
     ? currentUser.fullName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
     : "US";
@@ -57,12 +52,12 @@ export function TopNav({ floating = false }: { floating?: boolean }) {
       <AuraLogo />
 
       <nav className="hidden items-center gap-1 lg:flex">
-        {nav.map((item) => {
-          const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
+        {headerItems.map((item) => {
+          const active = item.route === "/" ? pathname === "/" : pathname.startsWith(item.route);
           return (
             <Link
-              key={item.to}
-              to={item.to}
+              key={item.id}
+              to={item.route}
               className={cn(
                 "rounded-md px-3 py-1.5 text-[13px] transition-colors duration-200",
                 active
@@ -70,7 +65,7 @@ export function TopNav({ floating = false }: { floating?: boolean }) {
                   : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
               )}
             >
-              {item.label}
+              {item.title}
             </Link>
           );
         })}
