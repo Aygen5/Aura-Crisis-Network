@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppShell } from "@/components/aura/AppShell";
 import { AuraBadge, PanelCard } from "@/components/aura/primitives";
+import { getStoredAuth, type AuthResponseDto } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings")({
@@ -66,6 +67,12 @@ function Row({
 
 function Settings() {
   const [tab, setTab] = useState<(typeof sections)[number]>("Profile");
+  const [user, setUser] = useState<AuthResponseDto | null>(null);
+
+  useEffect(() => {
+    setUser(getStoredAuth());
+  }, []);
+
   const [flags, setFlags] = useState<Record<string, boolean>>({
     critical: true,
     digest: false,
@@ -76,8 +83,12 @@ function Settings() {
   });
   const set = (k: string) => (v: boolean) => setFlags((f) => ({ ...f, [k]: v }));
 
+  const initials = user?.fullName
+    ? user.fullName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    : "OP";
+
   return (
-    <AppShell title="Settings" description="Workspace and operator preferences.">
+    <AppShell title="Ayarlar & Profil" description="Sistem tercihleriniz ve aktif operatör oturum detayları.">
       <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
         <nav className="space-y-1">
           {sections.map((s) => (
@@ -98,33 +109,34 @@ function Settings() {
 
         <div className="max-w-3xl animate-fade-in space-y-6">
           {tab === "Profile" && (
-            <PanelCard title="Profile">
+            <PanelCard title="Operatör Profili (JWT Canlı Oturum)">
               <div className="flex items-center gap-4 border-b border-border px-6 py-5">
-                <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-secondary text-[15px] font-semibold">
-                  EK
+                <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-secondary text-[15px] font-semibold text-primary">
+                  {initials}
                 </span>
                 <div>
-                  <div className="text-[14px] font-medium">Elif Karaca</div>
+                  <div className="text-[14px] font-medium">{user?.fullName || "Bilinmeyen Kullanıcı"}</div>
                   <div className="text-[12px] text-muted-foreground">
-                    Duty Officer · Istanbul Coordination
+                    Rol: {user?.roles?.join(", ") || "Citizen"} · Aura Network ID: {user?.userId || "N/A"}
                   </div>
                 </div>
                 <AuraBadge tone="online" className="ml-auto">
-                  On shift
+                  Aktif Oturum
                 </AuraBadge>
               </div>
               <div className="grid gap-5 p-6 sm:grid-cols-2">
                 {[
-                  ["Full name", "Elif Karaca"],
-                  ["Operator ID", "AFAD-34-2291"],
-                  ["Email", "e.karaca@afad.gov.tr"],
-                  ["Phone", "+90 5•• ••• 41 08"],
+                  ["Ad Soyad", user?.fullName || "-"],
+                  ["Kullanıcı ID", user?.userId || "-"],
+                  ["E-Posta", user?.email || "-"],
+                  ["Rol Yetkisi", user?.roles?.join(", ") || "Citizen"],
                 ].map(([l, v]) => (
                   <label key={l} className="block">
                     <span className="mb-2 block text-[12px] font-medium">{l}</span>
                     <input
+                      readOnly
                       defaultValue={v}
-                      className="h-10 w-full rounded-lg border border-border bg-background px-3 text-[13px] outline-none transition-colors duration-200 focus:border-ring"
+                      className="h-10 w-full rounded-lg border border-border bg-background/50 px-3 text-[13px] outline-none transition-colors duration-200 focus:border-ring cursor-default"
                     />
                   </label>
                 ))}
@@ -133,9 +145,9 @@ function Settings() {
           )}
 
           {tab === "Appearance" && (
-            <PanelCard title="Appearance">
+            <PanelCard title="Görünüm ve Tema">
               <div className="grid gap-3 p-6 sm:grid-cols-3">
-                {["Command Dark", "Contrast Dark", "System"].map((t, i) => (
+                {["Koyu Tema (Saha Mode)", "Kontrast Koyu", "Sistem"].map((t, i) => (
                   <button
                     key={t}
                     className={cn(
@@ -148,63 +160,58 @@ function Settings() {
                   </button>
                 ))}
               </div>
-              <Row title="Reduced motion" desc="Disable panel and marker animations.">
+              <Row title="Animasyonları Azalt" desc="Harita marker ve panel animasyonlarını devre dışı bırakır.">
                 <Toggle on={false} onChange={() => {}} />
               </Row>
-              <Row title="Compact density" desc="Tighter row height across tables and feeds.">
+              <Row title="Kompakt Liste" desc="Tablo satır yüksekliklerini sıkılaştırır.">
                 <Toggle on={flags.cluster} onChange={set("cluster")} />
               </Row>
             </PanelCard>
           )}
 
           {tab === "Notifications" && (
-            <PanelCard title="Notifications">
-              <Row title="Critical alerts" desc="Earthquake, wildfire and mass casualty events.">
+            <PanelCard title="Canlı Bildirim Ayarları">
+              <Row title="Kritik Afet Uyanları" desc="Deprem (>=4.0 ML), orman yangını ve tıbbi tahliye uyarıları.">
                 <Toggle on={flags.critical} onChange={set("critical")} />
               </Row>
-              <Row title="Daily digest" desc="Summary of resolved events at 08:00.">
+              <Row title="Günlük Özet" desc="Her sabah 08:00'de tamamlanan ihbar bülteni.">
                 <Toggle on={flags.digest} onChange={set("digest")} />
               </Row>
-              <Row title="Audio cue" desc="Play a tone when a critical alert arrives.">
+              <Row title="Sesli İkaz Cihazı" desc="Yeni kriz uyarısı geldiğinde ses tonu çalar.">
                 <Toggle on={flags.sound} onChange={set("sound")} />
               </Row>
             </PanelCard>
           )}
 
           {tab === "Map Preferences" && (
-            <PanelCard title="Map Preferences">
-              <Row title="District labels" desc="Show administrative boundaries and names.">
+            <PanelCard title="Harita Tercihleri">
+              <Row title="İlçe Sınırları ve Etiketler" desc="PostGIS ilçe sınırlarını ve isimlerini göster.">
                 <Toggle on={flags.labels} onChange={set("labels")} />
               </Row>
-              <Row title="Terrain shading" desc="Render elevation relief under the base layer.">
+              <Row title="Arazi Gölgelendirme" desc="Yükseklik rölyef tabakasını aktif et.">
                 <Toggle on={flags.terrain} onChange={set("terrain")} />
               </Row>
-              <Row title="Marker clustering" desc="Group dense markers when zoomed out.">
+              <Row title="Marker Kümeleme (Clustering)" desc="Yoğun markerları uzaklaştırınca grupla.">
                 <Toggle on={flags.cluster} onChange={set("cluster")} />
               </Row>
-              <Row title="Default location" desc="Map centre on session start.">
+              <Row title="Varsayılan Merkez" desc="Oturum açılışında harita merkezi.">
                 <select className="h-9 rounded-lg border border-border bg-background px-3 text-[13px] outline-none focus:border-ring">
-                  <option>Istanbul, Türkiye</option>
-                  <option>Marmara Region</option>
-                  <option>Türkiye (national)</option>
+                  <option>İstanbul, Türkiye</option>
+                  <option>Marmara Bölgesi</option>
+                  <option>Türkiye Geneli</option>
                 </select>
               </Row>
             </PanelCard>
           )}
 
           {tab === "Account" && (
-            <PanelCard title="Account">
-              <Row title="Two-factor authentication" desc="Hardware key enrolled · YubiKey 5C.">
-                <AuraBadge tone="online">Enabled</AuraBadge>
+            <PanelCard title="Hesap ve Güvenlik">
+              <Row title="İki Faktörlü Doğrulama (2FA)" desc="Identity JWT + Refresh Token Güvenlik Protokolü.">
+                <AuraBadge tone="online">Etkin (JWT)</AuraBadge>
               </Row>
-              <Row title="Active sessions" desc="2 devices signed in.">
+              <Row title="Refresh Token Bitiş Tarihi" desc={user?.refreshTokenExpiresAt ? new Date(user.refreshTokenExpiresAt).toLocaleString() : "Aktif"}>
                 <button className="h-9 rounded-lg border border-border px-3 text-[12px] text-muted-foreground transition-colors duration-200 hover:bg-secondary hover:text-foreground">
-                  Manage
-                </button>
-              </Row>
-              <Row title="Revoke access" desc="Sign out of every device immediately.">
-                <button className="h-9 rounded-lg border border-critical/30 bg-critical/10 px-3 text-[12px] font-medium text-critical transition-colors duration-200 hover:bg-critical/20">
-                  Revoke all
+                  Yenile
                 </button>
               </Row>
             </PanelCard>

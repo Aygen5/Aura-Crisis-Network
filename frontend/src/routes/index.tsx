@@ -18,18 +18,12 @@ import { DisasterIcon } from "@/components/aura/DisasterIcon";
 import { TopNav } from "@/components/aura/AppShell";
 import { AuraBadge, StatCard, StatusDot } from "@/components/aura/primitives";
 import { CreateReportModal } from "@/components/aura/CreateReportModal";
-import {
-  disasterMeta,
-  fetchActiveEvents,
-  fetchAnalyticsSummary,
-  isAuthenticated,
-  type AnalyticsSummaryDto,
-  type EventDto,
-} from "@/lib/api-client";
+import { useActiveEvents } from "@/queries/useEventsQuery";
+import { useAnalyticsSummary } from "@/queries/useAnalyticsQuery";
+import { disasterMeta, isAuthenticated } from "@/lib/api-client";
 import {
   onEventCreated,
   onReportStatusChanged,
-  startSignalRConnection,
 } from "@/lib/signalr-client";
 import { cn } from "@/lib/utils";
 
@@ -73,8 +67,8 @@ const mapLayers = [
 
 function CommandCenter() {
   const navigate = useNavigate();
-  const [events, setEvents] = useState<EventDto[]>([]);
-  const [summary, setSummary] = useState<AnalyticsSummaryDto | null>(null);
+  const { data: events = [], refetch: refetchEvents } = useActiveEvents();
+  const { data: summary, refetch: refetchSummary } = useAnalyticsSummary();
   const [selected, setSelected] = useState<string | null>(null);
   const [active, setActive] = useState<Record<string, boolean>>({
     heatmap: true,
@@ -92,35 +86,13 @@ function CommandCenter() {
   const [notes, setNotes] = useState<NotificationItem[]>([]);
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
-  async function loadData() {
-    try {
-      const [evList, sumData] = await Promise.all([
-        fetchActiveEvents(),
-        fetchAnalyticsSummary(),
-      ]);
-      setEvents(evList);
-      setSummary(sumData);
-    } catch {
-    }
-  }
-
   useEffect(() => {
     if (!isAuthenticated()) {
       navigate({ to: "/login" });
       return;
     }
 
-    loadData();
-
-    startSignalRConnection();
-
     const unsubEvent = onEventCreated((newEvent) => {
-      setEvents((prev) => {
-        const exists = prev.some((item) => item.id === newEvent.id);
-        if (exists) return prev;
-        return [newEvent, ...prev];
-      });
-
       setNotes((prev) => [
         {
           id: `${newEvent.id}-${Date.now()}`,
@@ -425,7 +397,10 @@ function CommandCenter() {
       <CreateReportModal
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
-        onSuccess={() => loadData()}
+        onSuccess={() => {
+          refetchEvents();
+          refetchSummary();
+        }}
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Area,
   AreaChart,
@@ -16,7 +16,8 @@ import {
 } from "recharts";
 import { AppShell } from "@/components/aura/AppShell";
 import { PanelCard, StatCard } from "@/components/aura/primitives";
-import { fetchAnalyticsSummary, type AnalyticsSummaryDto } from "@/lib/api-client";
+import { useAnalyticsSummary } from "@/queries/useAnalyticsQuery";
+import { useActiveEvents } from "@/queries/useEventsQuery";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/analytics")({
@@ -48,14 +49,6 @@ const volume = [
   { t: "Cum", earthquake: 21, flood: 9, wildfire: 7, report: 24 },
   { t: "Cmt", earthquake: 16, flood: 5, wildfire: 6, report: 19 },
   { t: "Paz", earthquake: 11, flood: 7, wildfire: 3, report: 15 },
-];
-
-const distribution = [
-  { name: "Deprem", value: 42, color: "#ef4444" },
-  { name: "Sel / Taşkın", value: 24, color: "#0ea5e9" },
-  { name: "Yangın", value: 14, color: "#f97316" },
-  { name: "Heyelan", value: 10, color: "#eab308" },
-  { name: "İhbarlar", value: 10, color: "#a855f7" },
 ];
 
 const response = [
@@ -91,18 +84,17 @@ const tooltipStyle = {
 
 function Analytics() {
   const [range, setRange] = useState<(typeof ranges)[number]>("Haftalık");
-  const [summary, setSummary] = useState<AnalyticsSummaryDto | null>(null);
+  const { data: summary } = useAnalyticsSummary();
+  const { data: events = [] } = useActiveEvents();
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const data = await fetchAnalyticsSummary();
-        setSummary(data);
-      } catch {
-      }
-    }
-    loadData();
-  }, []);
+  const totalReports = (summary?.verifiedReportsCount || 0) + (summary?.pendingReportsCount || 0) + (summary?.rejectedReportsCount || 0);
+
+  const distribution = [
+    { name: "Aktif Afetler", value: summary?.totalActiveEvents || events.length, color: "#ef4444" },
+    { name: "Onaylı İhbarlar", value: summary?.verifiedReportsCount || 0, color: "#10b981" },
+    { name: "Bekleyen İhbarlar", value: summary?.pendingReportsCount || 0, color: "#f59e0b" },
+    { name: "Reddedilen İhbarlar", value: summary?.rejectedReportsCount || 0, color: "#6b7280" },
+  ];
 
   return (
     <AppShell
@@ -130,7 +122,7 @@ function Analytics() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Toplam Aktif Afetler"
-          value={summary ? summary.totalActiveEvents.toString() : "0"}
+          value={summary ? summary.totalActiveEvents.toString() : events.length.toString()}
           delta="Canlı Veri"
         />
         <StatCard
@@ -178,7 +170,7 @@ function Analytics() {
           </div>
         </PanelCard>
 
-        <PanelCard title="Afet Dağılımı">
+        <PanelCard title="Canlı İhbar & Olay Dağılımı">
           <div className="h-[300px] p-6">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -203,7 +195,7 @@ function Analytics() {
               <li key={d.name} className="flex items-center gap-2 text-[11px] text-muted-foreground">
                 <span className="h-2 w-2 rounded-full" style={{ background: d.color }} />
                 {d.name}
-                <span className="num ml-auto text-foreground">{d.value}%</span>
+                <span className="num ml-auto text-foreground">{d.value}</span>
               </li>
             ))}
           </ul>

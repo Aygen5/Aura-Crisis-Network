@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -17,12 +16,8 @@ import {
 import { AppShell } from "@/components/aura/AppShell";
 import { MapCanvas } from "@/components/aura/MapCanvas";
 import { AuraBadge, PanelCard } from "@/components/aura/primitives";
-import {
-  fetchActiveEvents,
-  fetchRiskAnalysis,
-  type DistrictRiskDto,
-  type EventDto,
-} from "@/lib/api-client";
+import { useRiskAnalysis } from "@/queries/useRiskQuery";
+import { useActiveEvents } from "@/queries/useEventsQuery";
 
 export const Route = createFileRoute("/risk")({
   head: () => ({
@@ -49,12 +44,6 @@ const weather = Array.from({ length: 12 }, (_, i) => ({
   wind: [12, 14, 18, 21, 24, 22, 19, 17, 15, 13, 12, 11][i],
 }));
 
-const flood = Array.from({ length: 10 }, (_, i) => ({
-  d: `D+${i}`,
-  predicted: [22, 31, 46, 58, 63, 55, 44, 38, 30, 26][i],
-  baseline: [20, 22, 25, 28, 30, 29, 27, 26, 24, 23][i],
-}));
-
 const axis = {
   stroke: "var(--muted-foreground)",
   fontSize: 11,
@@ -71,23 +60,8 @@ const tooltipStyle = {
 };
 
 function RiskAnalysis() {
-  const [districtRisks, setDistrictRisks] = useState<DistrictRiskDto[]>([]);
-  const [events, setEvents] = useState<EventDto[]>([]);
-
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [risks, evs] = await Promise.all([
-          fetchRiskAnalysis(),
-          fetchActiveEvents(),
-        ]);
-        setDistrictRisks(risks);
-        setEvents(evs);
-      } catch {
-      }
-    }
-    loadData();
-  }, []);
+  const { data: districtRisks = [], isLoading: isRisksLoading } = useRiskAnalysis();
+  const { data: events = [] } = useActiveEvents();
 
   const avgSeismic = districtRisks.length
     ? Math.round(districtRisks.reduce((a, b) => a + b.seismicRisk, 0) / districtRisks.length)
@@ -109,9 +83,11 @@ function RiskAnalysis() {
     { label: "Yangın Riski", value: avgWildfire, tone: "critical" as const, note: "Sıcaklık, Rüzgar ve Nem Analizi" },
   ];
 
-  const landslideData = districtRisks.map((d) => ({
+  const districtChartData = districtRisks.map((d) => ({
     district: d.districtName,
-    v: d.landslideRisk,
+    landslide: d.landslideRisk,
+    flood: d.floodRisk,
+    seismic: d.seismicRisk,
   }));
 
   return (
@@ -167,42 +143,40 @@ function RiskAnalysis() {
           </div>
         </PanelCard>
 
-        <PanelCard title="İlçe Heyelan Tahmini">
+        <PanelCard title="İlçe Heyelan & Sel Riski">
           <div className="h-[280px] p-6">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={landslideData} layout="vertical" barSize={14}>
-                <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" horizontal={false} />
-                <XAxis type="number" {...axis} />
-                <YAxis type="category" dataKey="district" {...axis} width={80} />
-                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--secondary)" }} />
-                <Bar dataKey="v" radius={[0, 4, 4, 0]}>
-                  {landslideData.map((d) => (
-                    <Cell key={d.district} fill={d.v > 50 ? "#ef4444" : "#f59e0b"} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            {isRisksLoading ? (
+              <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                Yükleniyor...
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={districtChartData} layout="vertical" barSize={14}>
+                  <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" horizontal={false} />
+                  <XAxis type="number" {...axis} />
+                  <YAxis type="category" dataKey="district" {...axis} width={80} />
+                  <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--secondary)" }} />
+                  <Bar dataKey="landslide" radius={[0, 4, 4, 0]}>
+                    {districtChartData.map((d) => (
+                      <Cell key={d.district} fill={d.landslide > 50 ? "#ef4444" : "#f59e0b"} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </PanelCard>
 
-        <PanelCard title="Sel Tahmini" className="lg:col-span-2">
+        <PanelCard title="Canlı İlçe Sel Tahmini" className="lg:col-span-2">
           <div className="h-[260px] p-6">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={flood}>
+              <BarChart data={districtChartData}>
                 <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="d" {...axis} />
+                <XAxis dataKey="district" {...axis} />
                 <YAxis {...axis} width={28} />
                 <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "var(--border)" }} />
-                <Line type="monotone" dataKey="predicted" stroke="#f59e0b" strokeWidth={2} dot={false} />
-                <Line
-                  type="monotone"
-                  dataKey="baseline"
-                  stroke="var(--muted-foreground)"
-                  strokeWidth={1.5}
-                  strokeDasharray="4 4"
-                  dot={false}
-                />
-              </LineChart>
+                <Bar dataKey="flood" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </PanelCard>

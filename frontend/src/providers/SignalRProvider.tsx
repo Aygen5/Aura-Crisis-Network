@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   startSignalRConnection,
   onEventCreated,
@@ -17,10 +18,21 @@ const SignalRContext = createContext<SignalRContextType | undefined>(undefined);
 
 export function SignalRProvider({ children }: { children: ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     startSignalRConnection().then(() => {
       setIsConnected(true);
+    });
+
+    const unsubEvent = onEventCreated((newEvent) => {
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
+    });
+
+    const unsubReport = onReportStatusChanged((updatedReport) => {
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
     });
 
     const interval = setInterval(() => {
@@ -28,8 +40,12 @@ export function SignalRProvider({ children }: { children: ReactNode }) {
       setIsConnected(conn?.state === "Connected");
     }, 5000);
 
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      unsubEvent();
+      unsubReport();
+      clearInterval(interval);
+    };
+  }, [queryClient]);
 
   return (
     <SignalRContext.Provider

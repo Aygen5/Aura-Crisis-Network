@@ -1,17 +1,11 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
 import { ArrowLeft, ExternalLink, MapPin } from "lucide-react";
 import { AppShell } from "@/components/aura/AppShell";
 import { MapCanvas } from "@/components/aura/MapCanvas";
 import { DisasterIcon } from "@/components/aura/DisasterIcon";
 import { AuraBadge, PanelCard, StatusDot } from "@/components/aura/primitives";
-import {
-  disasterMeta,
-  escalateEvent,
-  fetchActiveEvents,
-  fetchEventById,
-  type EventDto,
-} from "@/lib/api-client";
+import { useEventById, useEscalateEvent, useActiveEvents } from "@/queries/useEventsQuery";
+import { disasterMeta, fetchEventById, type EventDto } from "@/lib/api-client";
 
 export const Route = createFileRoute("/event/$id")({
   loader: async ({ params }): Promise<{ event: EventDto }> => {
@@ -48,31 +42,14 @@ export const Route = createFileRoute("/event/$id")({
 
 function EventDetail() {
   const { event: initialEvent } = Route.useLoaderData() as { event: EventDto };
-  const [event, setEvent] = useState<EventDto>(initialEvent);
-  const [nearby, setNearby] = useState<EventDto[]>([]);
-  const [escalating, setEscalating] = useState(false);
+  const { data: event = initialEvent } = useEventById(initialEvent.id);
+  const { data: allEvents = [] } = useActiveEvents();
+  const escalateMutation = useEscalateEvent();
 
-  useEffect(() => {
-    async function loadNearby() {
-      try {
-        const allEvents = await fetchActiveEvents();
-        setNearby(allEvents.filter((e) => e.id !== event.id).slice(0, 4));
-      } catch {
-      }
-    }
-    loadNearby();
-  }, [event.id]);
+  const nearby = allEvents.filter((e) => e.id !== event.id).slice(0, 4);
 
-  async function handleEscalate() {
-    setEscalating(true);
-    try {
-      await escalateEvent(event.id);
-      const updated = await fetchEventById(event.id);
-      setEvent(updated);
-    } catch {
-    } finally {
-      setEscalating(false);
-    }
+  function handleEscalate() {
+    escalateMutation.mutate(event.id);
   }
 
   const meta = disasterMeta[event.type] ?? disasterMeta.Earthquake;
@@ -91,10 +68,10 @@ function EventDetail() {
           </Link>
           <button
             onClick={handleEscalate}
-            disabled={escalating}
+            disabled={escalateMutation.isPending}
             className="flex h-9 items-center gap-2 rounded-lg bg-red-600 px-4 text-[13px] font-medium text-white transition-opacity duration-200 hover:bg-red-700 disabled:opacity-50"
           >
-            {escalating ? "Yükseltiliyor..." : "Seviyeyi Yükselt (Escalate)"}
+            {escalateMutation.isPending ? "Yükseltiliyor..." : "Seviyeyi Yükselt (Escalate)"}
           </button>
         </div>
       }

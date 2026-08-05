@@ -1,19 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Download, Filter, Search, CheckCircle2, XCircle, Plus, Paperclip } from "lucide-react";
 import { AppShell } from "@/components/aura/AppShell";
 import { DisasterIcon } from "@/components/aura/DisasterIcon";
 import { AuraBadge, PanelCard } from "@/components/aura/primitives";
 import { CreateReportModal } from "@/components/aura/CreateReportModal";
 import { ReportDetailModal } from "@/components/aura/ReportDetailModal";
-import {
-  disasterMeta,
-  fetchReportsByStatus,
-  updateReportStatus,
-  type CitizenReportDto,
-  type ReportStatus,
-} from "@/lib/api-client";
-import { onReportStatusChanged } from "@/lib/signalr-client";
+import { useReportsByStatus, useUpdateReportStatus } from "@/queries/useReportsQuery";
+import { disasterMeta, type CitizenReportDto, type ReportStatus } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/reports")({
@@ -45,60 +39,33 @@ const statusTone: Record<ReportStatus, "warning" | "online" | "critical"> = {
 
 function ReportCenter() {
   const [tab, setTab] = useState<ReportStatus | "All">("All");
-  const [reportsList, setReportsList] = useState<CitizenReportDto[]>([]);
   const [q, setQ] = useState("");
-  const [loading, setLoading] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<CitizenReportDto | null>(null);
 
-  async function loadReports() {
-    setLoading(true);
-    try {
-      if (tab === "All") {
-        const [p, v, r] = await Promise.all([
-          fetchReportsByStatus("Pending"),
-          fetchReportsByStatus("Verified"),
-          fetchReportsByStatus("Rejected"),
-        ]);
-        setReportsList([...p, ...v, ...r]);
-      } else {
-        const data = await fetchReportsByStatus(tab);
-        setReportsList(data);
-      }
-    } catch {
-    } finally {
-      setLoading(false);
-    }
-  }
+  const pendingQuery = useReportsByStatus("Pending");
+  const verifiedQuery = useReportsByStatus("Verified");
+  const rejectedQuery = useReportsByStatus("Rejected");
+  const updateStatusMutation = useUpdateReportStatus();
 
-  useEffect(() => {
-    loadReports();
-
-    const unsub = onReportStatusChanged(() => {
-      loadReports();
-    });
-
-    return () => {
-      unsub();
-    };
-  }, [tab]);
+  const reportsList = useMemo(() => {
+    const p = pendingQuery.data || [];
+    const v = verifiedQuery.data || [];
+    const r = rejectedQuery.data || [];
+    if (tab === "Pending") return p;
+    if (tab === "Verified") return v;
+    if (tab === "Rejected") return r;
+    return [...p, ...v, ...r];
+  }, [tab, pendingQuery.data, verifiedQuery.data, rejectedQuery.data]);
 
   async function handleVerify(e: React.MouseEvent, id: string) {
     e.stopPropagation();
-    try {
-      await updateReportStatus(id, "Verified");
-      loadReports();
-    } catch {
-    }
+    updateStatusMutation.mutate({ id, status: "Verified" });
   }
 
   async function handleReject(e: React.MouseEvent, id: string) {
     e.stopPropagation();
-    try {
-      await updateReportStatus(id, "Rejected");
-      loadReports();
-    } catch {
-    }
+    updateStatusMutation.mutate({ id, status: "Rejected" });
   }
 
   const rows = useMemo(
@@ -256,14 +223,19 @@ function ReportCenter() {
       <CreateReportModal
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
-        onSuccess={() => loadReports()}
+        onSuccess={() => {
+          pendingQuery.refetch();
+          verifiedQuery.refetch();
+        }}
       />
 
       <ReportDetailModal
         report={selectedReport}
         onClose={() => setSelectedReport(null)}
         onRefresh={() => {
-          loadReports();
+          pendingQuery.refetch();
+          verifiedQuery.refetch();
+          rejectedQuery.refetch();
           setSelectedReport(null);
         }}
       />
