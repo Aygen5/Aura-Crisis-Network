@@ -53,6 +53,7 @@ public static class DependencyInjection
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IOutboxRepository, OutboxRepository>();
         services.AddScoped<IRiskZoneRepository, RiskZoneRepository>();
+        services.AddScoped<IGisTileRepository, GisTileRepository>();
 
         services.AddScoped<INotificationChannel, SignalRNotificationChannel>();
         services.AddScoped<INotificationChannel, EmailNotificationChannel>();
