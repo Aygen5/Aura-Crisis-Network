@@ -4,7 +4,11 @@ using MediatR;
 
 namespace Aura.Application.EmergencyUnits.Queries;
 
-public record GetAllEmergencyUnitsQuery : IRequest<IReadOnlyList<EmergencyUnitDto>>;
+public record GetAllEmergencyUnitsQuery : IRequest<IReadOnlyList<EmergencyUnitDto>>, ICacheableRequest
+{
+    public string CacheKey => "emergency-units:all";
+    public TimeSpan? Expiration => TimeSpan.FromSeconds(15);
+}
 
 public class GetAllEmergencyUnitsQueryHandler : IRequestHandler<GetAllEmergencyUnitsQuery, IReadOnlyList<EmergencyUnitDto>>
 {

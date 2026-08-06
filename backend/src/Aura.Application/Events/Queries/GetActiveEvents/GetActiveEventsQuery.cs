@@ -4,7 +4,11 @@ using MediatR;
 
 namespace Aura.Application.Events.Queries.GetActiveEvents;
 
-public record GetActiveEventsQuery() : IRequest<IReadOnlyList<EventDto>>;
+public record GetActiveEventsQuery() : IRequest<IReadOnlyList<EventDto>>, ICacheableRequest
+{
+    public string CacheKey => "events:active";
+    public TimeSpan? Expiration => TimeSpan.FromMinutes(2);
+}
 
 public class GetActiveEventsQueryHandler : IRequestHandler<GetActiveEventsQuery, IReadOnlyList<EventDto>>
 {

@@ -6,7 +6,11 @@ using MediatR;
 
 namespace Aura.Application.Analytics.Queries.GetAnalyticsSummary;
 
-public record GetAnalyticsSummaryQuery() : IRequest<AnalyticsSummaryDto>;
+public record GetAnalyticsSummaryQuery() : IRequest<AnalyticsSummaryDto>, ICacheableRequest
+{
+    public string CacheKey => "analytics:summary";
+    public TimeSpan? Expiration => TimeSpan.FromMinutes(5);
+}
 
 public class GetAnalyticsSummaryQueryHandler : IRequestHandler<GetAnalyticsSummaryQuery, AnalyticsSummaryDto>
 {

@@ -4,7 +4,10 @@ using MediatR;
 
 namespace Aura.Application.EmergencyUnits.Commands;
 
-public record DispatchUnitCommand(Guid UnitId, Guid EventId) : IRequest<EmergencyUnitDto>;
+public record DispatchUnitCommand(Guid UnitId, Guid EventId) : IRequest<EmergencyUnitDto>, IInvalidatesCache
+{
+    public string[] CacheKeysToInvalidate => ["emergency-units:all", "events:active"];
+}
 
 public class DispatchUnitCommandHandler : IRequestHandler<DispatchUnitCommand, EmergencyUnitDto>
 {
