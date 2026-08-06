@@ -1,6 +1,9 @@
 using Aura.Application.Common.Interfaces;
 using Aura.Infrastructure.BackgroundJobs;
 using Aura.Infrastructure.Identity;
+using Aura.Infrastructure.Jobs;
+using Aura.Infrastructure.Notifications;
+using Aura.Infrastructure.Notifications.Channels;
 using Aura.Infrastructure.Persistence;
 using Aura.Infrastructure.Persistence.Repositories;
 using Aura.Infrastructure.Services;
@@ -48,11 +51,20 @@ public static class DependencyInjection
         services.AddScoped<IDistrictRiskRepository, DistrictRiskRepository>();
         services.AddScoped<IOperatorRepository, OperatorRepository>();
 
+        services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<IOutboxRepository, OutboxRepository>();
+
+        services.AddScoped<INotificationChannel, SignalRNotificationChannel>();
+        services.AddScoped<INotificationChannel, EmailNotificationChannel>();
+        services.AddScoped<INotificationDispatcher, NotificationDispatcher>();
+
         services.AddHttpClient<IKandilliIngestionService, KandilliIngestionService>();
         services.AddHostedService<KandilliBackgroundWorker>();
 
         services.AddHttpClient<IMeteorologyService, MeteorologyService>();
         services.AddHostedService<MeteorologyBackgroundWorker>();
+
+        services.AddHostedService<NotificationOutboxProcessorJob>();
 
         return services;
     }

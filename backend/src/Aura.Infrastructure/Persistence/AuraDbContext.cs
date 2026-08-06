@@ -15,6 +15,8 @@ public class AuraDbContext : IdentityDbContext<ApplicationUser, ApplicationRole,
     public DbSet<DistrictRisk> DistrictRisks => Set<DistrictRisk>();
     public DbSet<Operator> Operators => Set<Operator>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     public AuraDbContext(DbContextOptions<AuraDbContext> options) : base(options)
     {
