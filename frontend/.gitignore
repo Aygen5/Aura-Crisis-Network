@@ -1,0 +1,12 @@
+node_modules
+dist
+dist-ssr
+.output
+.vinxi
+.tanstack
+.tanstack/
+.tanstack/**
+.nitro
+*.local
+.wrangler/
+.dev.vars
