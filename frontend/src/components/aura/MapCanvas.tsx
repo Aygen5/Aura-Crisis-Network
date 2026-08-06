@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { DisasterIcon } from "./DisasterIcon";
 import { disasterMeta, type EventDto, type RiskZoneDto } from "@/lib/api-client";
 import { TURKEY_PATHS, NEIGHBOR_PATHS, CITIES, SEA_LABELS } from "@/lib/geo-turkey";
@@ -63,6 +63,14 @@ const defaultRiskPolygons: Array<{
   },
 ];
 
+const heatNodes = [
+  { id: "hn-1", cx: 640, cy: 260, r: 110, gradient: "url(#heatHigh)", density: "Yoğun (Kırmızı)", label: "Kadıköy / Marmara" },
+  { id: "hn-2", cx: 220, cy: 210, r: 120, gradient: "url(#heatHigh)", density: "Yoğun (Kırmızı)", label: "Silivri Fay Hattı" },
+  { id: "hn-3", cx: 480, cy: 290, r: 90, gradient: "url(#heatMedium)", density: "Orta (Sarı)", label: "Fatih / Avcılar" },
+  { id: "hn-4", cx: 780, cy: 290, r: 100, gradient: "url(#heatLow)", density: "Seyrek (Mavi)", label: "Kocaeli / İzmit" },
+  { id: "hn-5", cx: 340, cy: 300, r: 85, gradient: "url(#heatLow)", density: "Seyrek (Mavi)", label: "Bursa / Nilüfer" },
+];
+
 export function BaseMap({
   heatmap = false,
   risk = false,
@@ -70,6 +78,7 @@ export function BaseMap({
   labels = true,
   riskZones = [],
   bufferPoint = null,
+  events = [],
   onMapClick,
 }: {
   heatmap?: boolean;
@@ -78,6 +87,7 @@ export function BaseMap({
   labels?: boolean;
   riskZones?: RiskZoneDto[];
   bufferPoint?: { lat: number; lng: number; radiusMeters: number } | null;
+  events?: EventDto[];
   onMapClick?: (point: { lat: number; lng: number }) => void;
 }) {
   const [hoveredZone, setHoveredZone] = useState<any | null>(null);
@@ -105,11 +115,25 @@ export function BaseMap({
         onClick={handleSvgClick}
       >
         <defs>
-          <radialGradient id="heat" cx="50%" cy="50%">
-            <stop offset="0%" stopColor="#ef4444" stopOpacity="0.5" />
-            <stop offset="55%" stopColor="#f59e0b" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
+          <radialGradient id="heatHigh" cx="50%" cy="50%">
+            <stop offset="0%" stopColor="#ef4444" stopOpacity="0.75" />
+            <stop offset="45%" stopColor="#f97316" stopOpacity="0.45" />
+            <stop offset="75%" stopColor="#eab308" stopOpacity="0.2" />
+            <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
           </radialGradient>
+
+          <radialGradient id="heatMedium" cx="50%" cy="50%">
+            <stop offset="0%" stopColor="#f97316" stopOpacity="0.65" />
+            <stop offset="50%" stopColor="#eab308" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="#eab308" stopOpacity="0" />
+          </radialGradient>
+
+          <radialGradient id="heatLow" cx="50%" cy="50%">
+            <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.6" />
+            <stop offset="60%" stopColor="#06b6d4" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+          </radialGradient>
+
           <pattern id="graticule" width="48" height="48" patternUnits="userSpaceOnUse">
             <path d="M48 0H0V48" fill="none" stroke="oklch(1 0 0 / 0.02)" strokeWidth="1" />
           </pattern>
@@ -183,10 +207,15 @@ export function BaseMap({
         )}
 
         {heatmap && (
-          <g>
-            <circle cx="230" cy="200" r="140" fill="url(#heat)" />
-            <circle cx="500" cy="300" r="130" fill="url(#heat)" />
-            <circle cx="760" cy="290" r="150" fill="url(#heat)" />
+          <g className="mix-blend-screen transition-opacity duration-500">
+            {heatNodes.map((hn) => (
+              <circle key={hn.id} cx={hn.cx} cy={hn.cy} r={hn.r} fill={hn.gradient} />
+            ))}
+            {events.map((e) => {
+              const cx = (e.longitude - 26.0) * (1000.0 / 19.0);
+              const cy = (42.0 - e.latitude) * (600.0 / 6.0);
+              return <circle key={e.id} cx={cx} cy={cy} r="65" fill="url(#heatHigh)" />;
+            })}
           </g>
         )}
 
@@ -252,6 +281,26 @@ export function BaseMap({
         </div>
       )}
 
+      {heatmap && (
+        <div className="pointer-events-none absolute top-4 left-6 z-30 flex items-center gap-3 rounded-lg border border-border bg-card/90 px-3 py-2 text-[11px] backdrop-blur-md shadow-lg">
+          <span className="font-semibold text-muted-foreground">Isı Yoğunluk Lejandı:</span>
+          <div className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+            <span className="text-blue-400 font-medium">Seyrek (Mavi)</span>
+          </div>
+          <span className="text-muted-foreground">→</span>
+          <div className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+            <span className="text-amber-400 font-medium">Orta (Sarı)</span>
+          </div>
+          <span className="text-muted-foreground">→</span>
+          <div className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse" />
+            <span className="text-red-400 font-bold">Yoğun (Kırmızı)</span>
+          </div>
+        </div>
+      )}
+
       {risk && (
         <div className="pointer-events-none absolute bottom-4 left-6 z-30 flex items-center gap-3 rounded-lg border border-border bg-card/90 px-3 py-2 text-[11px] backdrop-blur-md">
           <span className="font-semibold text-muted-foreground">Lejand (Legend):</span>
@@ -291,6 +340,7 @@ export function MapCanvas({
         traffic={active?.traffic}
         riskZones={riskZones}
         bufferPoint={bufferPoint}
+        events={events}
         onMapClick={onMapClick}
       />
 
