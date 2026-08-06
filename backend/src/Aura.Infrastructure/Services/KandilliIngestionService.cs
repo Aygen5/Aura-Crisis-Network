@@ -98,6 +98,10 @@ public class KandilliIngestionService : IKandilliIngestionService
             {
                 detectedAt = DateTimeOffset.UtcNow;
             }
+            else
+            {
+                detectedAt = detectedAt.ToUniversalTime();
+            }
 
             var district = ExtractDistrict(title);
             var severity = CalculateSeverityFromMagnitude(magnitude);
@@ -144,6 +148,7 @@ public class KandilliIngestionService : IKandilliIngestionService
             {
                 continue;
             }
+            detectedAt = detectedAt.ToUniversalTime();
 
             if (!double.TryParse(parts[2], NumberStyles.Any, CultureInfo.InvariantCulture, out var lat) ||
                 !double.TryParse(parts[3], NumberStyles.Any, CultureInfo.InvariantCulture, out var lng) ||

@@ -8,7 +8,7 @@ public class Event : BaseEntity
 {
     public string Title { get; private set; }
     public DisasterType Type { get; private set; }
-    public int Severity { get; private set; } // 0 - 100
+    public int Severity { get; private set; }
     public GeoPoint Location { get; private set; }
     public string LocationName { get; private set; }
     public string District { get; private set; }
@@ -20,10 +20,9 @@ public class Event : BaseEntity
     public DateTimeOffset DetectedAt { get; private set; }
     public DateTimeOffset? EscalatedAt { get; private set; }
 
-   
-    #pragma warning disable CS8618
+#pragma warning disable CS8618
     private Event() { }
-    #pragma warning restore CS8618
+#pragma warning restore CS8618
 
     public Event(
         string title,
@@ -52,7 +51,7 @@ public class Event : BaseEntity
         Metric = metric ?? string.Empty;
         MetricLabel = metricLabel ?? string.Empty;
         Summary = summary ?? string.Empty;
-        DetectedAt = detectedAt;
+        DetectedAt = detectedAt.ToUniversalTime();
         Status = EventStatus.Active;
     }
 
