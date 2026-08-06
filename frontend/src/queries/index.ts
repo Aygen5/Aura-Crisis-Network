@@ -3,3 +3,4 @@ export * from "./useReportsQuery";
 export * from "./useRiskQuery";
 export * from "./useAnalyticsQuery";
 export * from "./useNotificationsQuery";
+export * from "./useRiskZonesQuery";

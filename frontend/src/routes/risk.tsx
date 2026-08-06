@@ -1,4 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useState } from "react";
 import {
   Area,
   AreaChart,
@@ -13,11 +14,15 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { Plus, MapPin, ShieldAlert, Activity, Target } from "lucide-react";
 import { AppShell } from "@/components/aura/AppShell";
 import { MapCanvas } from "@/components/aura/MapCanvas";
 import { AuraBadge, PanelCard } from "@/components/aura/primitives";
+import { HasRole } from "@/components/aura/HasRole";
+import { CreateRiskZoneModal } from "@/components/aura/CreateRiskZoneModal";
 import { useRiskAnalysis } from "@/queries/useRiskQuery";
 import { useActiveEvents } from "@/queries/useEventsQuery";
+import { useIntersectingRiskZones, useBufferAnalysis } from "@/queries/useRiskZonesQuery";
 import { isAuthenticated, hasAnyRole } from "@/lib/api-client";
 
 export const Route = createFileRoute("/risk")({
@@ -69,8 +74,23 @@ const tooltipStyle = {
 };
 
 function RiskAnalysis() {
+  const [clickedPoint, setClickedPoint] = useState<{ lat: number; lng: number } | null>({ lat: 41.01, lng: 28.97 });
+  const [bufferRadius, setBufferRadius] = useState(5000);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+
   const { data: districtRisks = [], isLoading: isRisksLoading } = useRiskAnalysis();
   const { data: events = [] } = useActiveEvents();
+
+  const { data: intersectingZones = [] } = useIntersectingRiskZones(
+    clickedPoint?.lat ?? null,
+    clickedPoint?.lng ?? null
+  );
+
+  const { data: bufferResult } = useBufferAnalysis(
+    clickedPoint?.lat ?? null,
+    clickedPoint?.lng ?? null,
+    bufferRadius
+  );
 
   const avgSeismic = districtRisks.length
     ? Math.round(districtRisks.reduce((a, b) => a + b.seismicRisk, 0) / districtRisks.length)
@@ -101,9 +121,21 @@ function RiskAnalysis() {
 
   return (
     <AppShell
-      title="Risk Analiz Merkezi"
-      description="Sismik, hidrolojik ve heyelan sensörlerinden dinamik hesaplanan risk tahminleme modelleri."
-      actions={<AuraBadge tone="info">Model v4.2 · Canlı PostGIS Entegrasyonu</AuraBadge>}
+      title="Risk Analiz & PostGIS Harita Merkezi"
+      description="Uzamsal poligon kesişim analizi (Point-in-Polygon Geofencing) ve etki tampon çemberi (Buffer Circle)."
+      actions={
+        <div className="flex items-center gap-2">
+          <HasRole roles={["Operator", "Admin"]}>
+            <button
+              onClick={() => setCreateModalOpen(true)}
+              className="flex h-9 items-center gap-2 rounded-lg bg-primary px-3 text-[13px] font-medium text-primary-foreground transition-all duration-200 hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" /> Yeni Risk Poligonu Ekle
+            </button>
+          </HasRole>
+          <AuraBadge tone="info">Model v4.2 · PostGIS GIST Spatial Index</AuraBadge>
+        </div>
+      }
     >
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {scoreCards.map((s) => (
@@ -125,6 +157,88 @@ function RiskAnalysis() {
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
+        <PanelCard
+          title="PostGIS Geofencing & Buffer Haritası"
+          action={
+            <div className="flex items-center gap-2 text-[12px]">
+              <span className="text-muted-foreground">Buffer Çember Yarıçapı:</span>
+              <select
+                value={bufferRadius}
+                onChange={(e) => setBufferRadius(Number(e.target.value))}
+                className="h-7 rounded border border-border bg-background px-2 text-[11px] outline-none"
+              >
+                <option value={1000}>1000m (1km)</option>
+                <option value={5000}>5000m (5km)</option>
+                <option value={10000}>10000m (10km)</option>
+              </select>
+            </div>
+          }
+          className="lg:col-span-2"
+        >
+          <MapCanvas
+            events={events}
+            active={{ heatmap: false, risk: true }}
+            bufferPoint={clickedPoint ? { ...clickedPoint, radiusMeters: bufferRadius } : null}
+            onMapClick={(point) => setClickedPoint(point)}
+            className="h-[360px] w-full rounded-b-xl"
+          />
+        </PanelCard>
+
+        <PanelCard title="Harita Kesişim Analizi (Point-in-Polygon)">
+          <div className="p-4 space-y-4">
+            {clickedPoint ? (
+              <div className="rounded-xl border border-border bg-background/50 p-3">
+                <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <MapPin className="h-3 w-3 text-primary" /> Tıklanan Koordinat
+                </span>
+                <p className="num mt-1 text-[13px] font-semibold">
+                  {clickedPoint.lat}° N, {clickedPoint.lng}° E
+                </p>
+              </div>
+            ) : (
+              <div className="text-[12px] text-muted-foreground">
+                Kesişim analizi için haritada bir noktaya tıklayınız.
+              </div>
+            )}
+
+            <div>
+              <h4 className="text-[12px] font-medium text-foreground mb-2 flex items-center justify-between">
+                <span>Kesişen PostGIS Risk Poligonları</span>
+                <span className="num text-primary font-bold">{intersectingZones.length} Poligon</span>
+              </h4>
+
+              {intersectingZones.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-border p-4 text-center text-[11px] text-muted-foreground">
+                  Bu koordinat herhangi bir yüksek risk poligonu içermemektedir.
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-48 overflow-y-auto scroll-slim">
+                  {intersectingZones.map((z) => (
+                    <div key={z.id} className="rounded-lg border border-border bg-foreground/[0.03] p-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[12px] font-medium">{z.name}</span>
+                        <span className="num text-[11px] font-bold text-red-400">{z.severity}/100</span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{z.district} · {z.type}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {bufferResult && (
+              <div className="rounded-xl border border-border bg-primary/5 p-3 space-y-1">
+                <span className="flex items-center gap-1 text-[11px] font-medium text-primary">
+                  <Target className="h-3.5 w-3.5" /> Buffer Çember Etki Özeti ({bufferRadius}m)
+                </span>
+                <p className="text-[12px] text-foreground">
+                  Etki alanı altında <span className="font-bold text-primary">{bufferResult.impactedRiskZoneCount}</span> adet risk bölgesi bulunmaktadır.
+                </p>
+              </div>
+            )}
+          </div>
+        </PanelCard>
+
         <PanelCard title="Meteorolojik Analiz" className="lg:col-span-2">
           <div className="h-[280px] p-6">
             <ResponsiveContainer width="100%" height="100%">
@@ -175,30 +289,12 @@ function RiskAnalysis() {
             )}
           </div>
         </PanelCard>
-
-        <PanelCard title="Canlı İlçe Sel Tahmini" className="lg:col-span-2">
-          <div className="h-[260px] p-6">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={districtChartData}>
-                <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="district" {...axis} />
-                <YAxis {...axis} width={28} />
-                <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "var(--border)" }} />
-                <Bar dataKey="flood" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </PanelCard>
-
-        <PanelCard title="Risk Haritası">
-          <MapCanvas
-            events={events}
-            active={{ heatmap: true, risk: true }}
-            className="h-[260px] w-full rounded-b-xl"
-            compact
-          />
-        </PanelCard>
       </div>
+
+      <CreateRiskZoneModal
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+      />
     </AppShell>
   );
 }

@@ -4,3 +4,4 @@ export * from "./reports.service";
 export * from "./risk.service";
 export * from "./analytics.service";
 export * from "./notifications.service";
+export * from "./risk-zones.service";

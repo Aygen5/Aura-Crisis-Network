@@ -1,29 +1,98 @@
 import { useState } from "react";
 import { DisasterIcon } from "./DisasterIcon";
-import { disasterMeta, type EventDto } from "@/lib/api-client";
+import { disasterMeta, type EventDto, type RiskZoneDto } from "@/lib/api-client";
 import { TURKEY_PATHS, NEIGHBOR_PATHS, CITIES, SEA_LABELS } from "@/lib/geo-turkey";
 import { cn } from "@/lib/utils";
 
 type Props = {
   events: EventDto[];
+  riskZones?: RiskZoneDto[];
   active?: Record<string, boolean>;
   selectedId?: string | null;
+  bufferPoint?: { lat: number; lng: number; radiusMeters: number } | null;
   onSelect?: (e: EventDto) => void;
+  onMapClick?: (point: { lat: number; lng: number }) => void;
   className?: string;
   compact?: boolean;
 };
+
+const defaultRiskPolygons: Array<{
+  id: string;
+  name: string;
+  type: string;
+  district: string;
+  severity: number;
+  color: string;
+  path: string;
+}> = [
+  {
+    id: "rz-1",
+    name: "Kuzey Anadolu Fay Çizgisi Sismik Poligonu",
+    type: "SeismicFaultZone",
+    district: "Silivri / Marmara",
+    severity: 92,
+    color: "#a855f7",
+    path: "M170 176 L280 158 L330 226 L250 268 L160 240 Z",
+  },
+  {
+    id: "rz-2",
+    name: "Kurubağ Dere Yatağı Sel & Taşkın Riski",
+    type: "FloodHazardZone",
+    district: "Kadıköy / Üsküdar",
+    severity: 85,
+    color: "#ef4444",
+    path: "M640 250 L790 232 L840 316 L720 356 L634 310 Z",
+  },
+  {
+    id: "rz-3",
+    name: "Beylikdüzü / Avcılar Heyelan Duyarlı Bölge",
+    type: "LandslideHazardZone",
+    district: "Avcılar",
+    severity: 68,
+    color: "#f59e0b",
+    path: "M290 260 L380 250 L420 310 L330 330 Z",
+  },
+  {
+    id: "rz-4",
+    name: "Yenikapı Toplanma ve Acil Tahliye Alanı",
+    type: "EvacuationZone",
+    district: "Fatih",
+    severity: 25,
+    color: "#eab308",
+    path: "M450 290 L520 280 L540 330 L470 340 Z",
+  },
+];
 
 export function BaseMap({
   heatmap = false,
   risk = false,
   traffic = false,
   labels = true,
+  riskZones = [],
+  bufferPoint = null,
+  onMapClick,
 }: {
   heatmap?: boolean;
   risk?: boolean;
   traffic?: boolean;
   labels?: boolean;
+  riskZones?: RiskZoneDto[];
+  bufferPoint?: { lat: number; lng: number; radiusMeters: number } | null;
+  onMapClick?: (point: { lat: number; lng: number }) => void;
 }) {
+  const [hoveredZone, setHoveredZone] = useState<any | null>(null);
+
+  function handleSvgClick(e: React.MouseEvent<SVGSVGElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const lat = Number((42.0 - (y / rect.height) * 6.0).toFixed(4));
+    const lng = Number((26.0 + (x / rect.width) * 19.0).toFixed(4));
+
+    onMapClick?.({ lat, lng });
+  }
+
   return (
     <div
       className="absolute inset-0 overflow-hidden"
@@ -32,7 +101,8 @@ export function BaseMap({
       <svg
         viewBox="0 0 1000 600"
         preserveAspectRatio="xMidYMid meet"
-        className="absolute inset-0 h-full w-full"
+        className="absolute inset-0 h-full w-full cursor-crosshair"
+        onClick={handleSvgClick}
       >
         <defs>
           <radialGradient id="heat" cx="50%" cy="50%">
@@ -70,47 +140,44 @@ export function BaseMap({
           ))}
         </g>
 
-        <g
-          clipPath="none"
-          stroke="oklch(1 0 0 / 0.035)"
-          strokeWidth="1"
-          fill="none"
-          pointerEvents="none"
-        >
-          <path d="M240 220 C 360 240 480 232 600 250 C 720 268 830 250 930 262" />
-          <path d="M200 300 C 330 316 470 300 600 320 C 720 338 840 320 940 330" />
-          <path d="M180 380 C 320 396 460 380 600 396 C 720 410 830 396 930 400" />
-        </g>
-
-        <g
-          stroke={traffic ? "oklch(0.72 0.16 60 / 0.5)" : "oklch(1 0 0 / 0.1)"}
-          strokeWidth="1.4"
-          fill="none"
-          strokeLinecap="round"
-        >
-          <path d="M221 190 C 300 216 350 240 401 256 C 500 286 620 260 720 250 C 810 242 880 250 930 268" />
-          <path d="M401 256 C 440 290 480 316 515 330 C 600 362 680 356 760 336" />
-          <path d="M221 190 C 210 250 190 300 165 340 C 220 366 320 380 401 386 C 480 392 540 372 600 356" />
-          <path d="M401 256 C 420 320 440 370 470 400" />
-        </g>
-
         {risk && (
           <g>
-            <path
-              d="M170 176 L280 158 L330 226 L250 268 L160 240 Z"
+            {defaultRiskPolygons.map((z) => (
+              <path
+                key={z.id}
+                d={z.path}
+                fill={z.color}
+                fillOpacity="0.15"
+                stroke={z.color}
+                strokeOpacity="0.8"
+                strokeWidth="1.5"
+                strokeDasharray="5 5"
+                className="transition-all duration-300 hover:fill-opacity-35 hover:stroke-width-2.5 cursor-pointer"
+                onMouseEnter={() => setHoveredZone(z)}
+                onMouseLeave={() => setHoveredZone(null)}
+              />
+            ))}
+          </g>
+        )}
+
+        {bufferPoint && (
+          <g>
+            <circle
+              cx={(bufferPoint.lng - 26.0) * (1000.0 / 19.0)}
+              cy={(42.0 - bufferPoint.lat) * (600.0 / 6.0)}
+              r={(bufferPoint.radiusMeters / 1000.0) * 12}
               fill="#ef4444"
-              fillOpacity="0.07"
+              fillOpacity="0.15"
               stroke="#ef4444"
-              strokeOpacity="0.32"
-              strokeDasharray="6 6"
+              strokeWidth="2"
+              strokeDasharray="4 4"
+              className="animate-pulse"
             />
-            <path
-              d="M640 250 L790 232 L840 316 L720 356 L634 310 Z"
-              fill="#f59e0b"
-              fillOpacity="0.06"
-              stroke="#f59e0b"
-              strokeOpacity="0.3"
-              strokeDasharray="6 6"
+            <circle
+              cx={(bufferPoint.lng - 26.0) * (1000.0 / 19.0)}
+              cy={(42.0 - bufferPoint.lat) * (600.0 / 6.0)}
+              r="4"
+              fill="#ef4444"
             />
           </g>
         )}
@@ -164,96 +231,99 @@ export function BaseMap({
           </g>
         )}
       </svg>
+
+      {hoveredZone && (
+        <div className="pointer-events-none absolute left-6 top-6 z-40 w-72 rounded-xl border border-border bg-card/95 p-4 shadow-2xl backdrop-blur-xl animate-fade-in">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              {hoveredZone.district}
+            </span>
+            <span
+              className="rounded-full px-2 py-0.5 text-[10px] font-bold text-white"
+              style={{ backgroundColor: hoveredZone.color }}
+            >
+              Şiddet: {hoveredZone.severity}/100
+            </span>
+          </div>
+          <h4 className="mt-1 text-[13px] font-semibold leading-snug">{hoveredZone.name}</h4>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            PostGIS uzamsal poligon kesişim haritası.
+          </p>
+        </div>
+      )}
+
+      {risk && (
+        <div className="pointer-events-none absolute bottom-4 left-6 z-30 flex items-center gap-3 rounded-lg border border-border bg-card/90 px-3 py-2 text-[11px] backdrop-blur-md">
+          <span className="font-semibold text-muted-foreground">Lejand (Legend):</span>
+          <span className="flex items-center gap-1 text-purple-400">
+            <span className="h-2.5 w-2.5 rounded-full bg-purple-500" /> Sismik Fay
+          </span>
+          <span className="flex items-center gap-1 text-red-400">
+            <span className="h-2.5 w-2.5 rounded-full bg-red-500" /> Sel Riski
+          </span>
+          <span className="flex items-center gap-1 text-amber-400">
+            <span className="h-2.5 w-2.5 rounded-full bg-amber-500" /> Heyelan
+          </span>
+          <span className="flex items-center gap-1 text-yellow-400">
+            <span className="h-2.5 w-2.5 rounded-full bg-yellow-500" /> Tahliye
+          </span>
+        </div>
+      )}
     </div>
   );
 }
 
-function projectCoordinates(lat: number, lng: number): { x: number; y: number } {
-  const minLng = 25.5;
-  const maxLng = 45.0;
-  const minLat = 35.5;
-  const maxLat = 42.5;
-
-  const x = Math.min(95, Math.max(5, ((lng - minLng) / (maxLng - minLng)) * 100));
-  const y = Math.min(95, Math.max(5, ((maxLat - lat) / (maxLat - minLat)) * 100));
-
-  return { x, y };
-}
-
 export function MapCanvas({
   events,
-  active = {},
+  riskZones,
+  active,
   selectedId,
+  bufferPoint,
   onSelect,
+  onMapClick,
   className,
-  compact = false,
 }: Props) {
-  const [hover, setHover] = useState<string | null>(null);
-  const isOn = (k: string) => active[k] !== false;
-
-  const visible = events.filter((e) => {
-    const typeKey = e.type.toLowerCase();
-    if (typeKey === "report") return isOn("report");
-    if (["earthquake", "flood", "wildfire"].includes(typeKey)) return isOn(typeKey);
-    return true;
-  });
-
   return (
-    <div className={cn("relative overflow-hidden bg-background", className)}>
-      <BaseMap heatmap={isOn("heatmap")} risk={isOn("risk")} traffic={active.traffic === true} />
+    <div className={cn("relative overflow-hidden rounded-xl border border-border", className)}>
+      <BaseMap
+        heatmap={active?.heatmap}
+        risk={active?.risk}
+        traffic={active?.traffic}
+        riskZones={riskZones}
+        bufferPoint={bufferPoint}
+        onMapClick={onMapClick}
+      />
 
-      <div className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 bg-linear-to-r from-transparent via-foreground/[0.025] to-transparent animate-sweep" />
+      <div className="absolute inset-0 pointer-events-none">
+        {events.map((e) => {
+          const meta = disasterMeta[e.type] ?? disasterMeta.Earthquake;
+          const selected = selectedId === e.id;
 
-      {visible.map((e) => {
-        const meta = disasterMeta[e.type] ?? disasterMeta.Earthquake;
-        const isSel = selectedId === e.id;
-        const pos = projectCoordinates(e.latitude, e.longitude);
-
-        return (
-          <button
-            key={e.id}
-            type="button"
-            onClick={() => onSelect?.(e)}
-            onMouseEnter={() => setHover(e.id)}
-            onMouseLeave={() => setHover(null)}
-            style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
-            className="absolute -translate-x-1/2 -translate-y-1/2 outline-none transition-all duration-300"
-            aria-label={`${e.title} — ${e.district}`}
-          >
-            <span className="relative flex items-center justify-center">
-              {e.status === "Active" && (
-                <span
-                  className="absolute h-8 w-8 rounded-full opacity-40 animate-ping-slow bg-red-500"
-                />
+          return (
+            <button
+              key={e.id}
+              onClick={() => onSelect?.(e)}
+              style={{
+                left: `${Math.max(4, Math.min(96, ((e.longitude - 26.0) / 19.0) * 100))}%`,
+                top: `${Math.max(4, Math.min(96, ((42.0 - e.latitude) / 6.0) * 100))}%`,
+              }}
+              className={cn(
+                "pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300",
+                selected ? "z-30 scale-125" : "z-20 hover:scale-110"
               )}
+            >
               <span
-                className={cn(
-                  "relative flex items-center justify-center rounded-full border backdrop-blur-sm transition-all duration-200 bg-background/80 text-foreground",
-                  compact ? "h-6 w-6" : "h-8 w-8",
-                  isSel || hover === e.id ? "scale-125 border-primary ring-2 ring-primary/40" : "scale-100 border-border"
-                )}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-current/30 bg-card/90 shadow-lg backdrop-blur-md"
                 style={{ color: meta.color }}
               >
-                <span className="relative" style={{ width: compact ? "12px" : "16px", height: compact ? "12px" : "16px" }}>
+                <span className="h-4 w-4">
                   <DisasterIcon type={e.type} />
                 </span>
               </span>
-            </span>
-
-            {hover === e.id && !compact && (
-              <span className="glass absolute left-1/2 top-full z-30 mt-2 w-56 -translate-x-1/2 rounded-lg p-3 text-left shadow-xl border border-border/40 bg-background/95 backdrop-blur-md animate-scale-in">
-                <span className="block text-[13px] font-medium text-foreground">{e.title}</span>
-                <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                  {e.district} · {e.source}
-                </span>
-                <span className="num mt-2 block text-sm font-semibold text-primary">
-                  {e.metric} {e.metricLabel}
-                </span>
-              </span>
-            )}
-          </button>
-        );
-      })}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
