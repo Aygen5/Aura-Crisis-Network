@@ -183,3 +183,38 @@ export const SEA_LABELS = [
     y: 532.6
   }
 ] as const;
+
+export interface SearchableLocation {
+  name: string;
+  type: "District" | "City";
+  lat: number;
+  lng: number;
+}
+
+export const SEARCHABLE_LOCATIONS: SearchableLocation[] = [
+  { name: "Kadıköy", type: "District", lat: 40.99, lng: 29.02 },
+  { name: "Silivri", type: "District", lat: 41.07, lng: 28.24 },
+  { name: "Fatih", type: "District", lat: 41.01, lng: 28.95 },
+  { name: "Beylikdüzü", type: "District", lat: 41.0, lng: 28.65 },
+  { name: "Avcılar", type: "District", lat: 40.98, lng: 28.71 },
+  { name: "Üsküdar", type: "District", lat: 41.02, lng: 29.01 },
+  { name: "Beşiktaş", type: "District", lat: 41.04, lng: 29.0 },
+  { name: "Şişli", type: "District", lat: 41.06, lng: 28.98 },
+  { name: "Bakırköy", type: "District", lat: 40.98, lng: 28.87 },
+  { name: "Maltepe", type: "District", lat: 40.93, lng: 29.13 },
+  { name: "Pendik", type: "District", lat: 40.87, lng: 29.23 },
+  { name: "Kartal", type: "District", lat: 40.9, lng: 29.18 },
+  { name: "İstanbul", type: "City", lat: 41.01, lng: 28.97 },
+  { name: "Ankara", type: "City", lat: 39.93, lng: 32.85 },
+  { name: "İzmir", type: "City", lat: 38.42, lng: 27.14 },
+  { name: "Bursa", type: "City", lat: 40.18, lng: 29.06 },
+  { name: "Antalya", type: "City", lat: 36.89, lng: 30.7 },
+  { name: "Adana", type: "City", lat: 37.0, lng: 35.32 },
+  { name: "Gaziantep", type: "City", lat: 37.06, lng: 37.38 },
+  { name: "Hatay", type: "City", lat: 36.2, lng: 36.16 },
+  { name: "Kahramanmaraş", type: "City", lat: 37.58, lng: 36.93 },
+  { name: "Malatya", type: "City", lat: 38.35, lng: 38.31 },
+  { name: "Adıyaman", type: "City", lat: 37.76, lng: 38.27 },
+  { name: "Trabzon", type: "City", lat: 41.0, lng: 39.71 },
+];
+

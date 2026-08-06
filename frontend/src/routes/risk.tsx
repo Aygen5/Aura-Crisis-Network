@@ -1,5 +1,5 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, redirect, useSearch } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
 import {
   Area,
   AreaChart,
@@ -8,13 +8,12 @@ import {
   CartesianGrid,
   Cell,
   Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import { Plus, MapPin, ShieldAlert, Activity, Target } from "lucide-react";
+import { Plus, MapPin, ShieldAlert, Activity, Target, Maximize2 } from "lucide-react";
 import { AppShell } from "@/components/aura/AppShell";
 import { MapCanvas } from "@/components/aura/MapCanvas";
 import { AuraBadge, PanelCard } from "@/components/aura/primitives";
@@ -23,9 +22,14 @@ import { CreateRiskZoneModal } from "@/components/aura/CreateRiskZoneModal";
 import { useRiskAnalysis } from "@/queries/useRiskQuery";
 import { useActiveEvents } from "@/queries/useEventsQuery";
 import { useIntersectingRiskZones, useBufferAnalysis } from "@/queries/useRiskZonesQuery";
-import { isAuthenticated, hasAnyRole } from "@/lib/api-client";
+import { isAuthenticated, hasAnyRole, type RiskZoneDto } from "@/lib/api-client";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/risk")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    lat: typeof search.lat === "number" ? search.lat : undefined,
+    lng: typeof search.lng === "number" ? search.lng : undefined,
+  }),
   beforeLoad: () => {
     if (!isAuthenticated()) {
       throw redirect({ to: "/login" });
@@ -36,13 +40,13 @@ export const Route = createFileRoute("/risk")({
   },
   head: () => ({
     meta: [
-      { title: "Risk Analysis — Aura Crisis Network" },
+      { title: "Risk Analysis & GIS Center — Aura Crisis Network" },
       {
         name: "description",
         content:
-          "Predictive risk scoring for seismic, flood and landslide exposure with live weather analysis across Istanbul districts.",
+          "Predictive risk scoring for seismic, flood and landslide exposure with live PostGIS geofencing across Marmara region.",
       },
-      { property: "og:title", content: "Risk Analysis — Aura Crisis Network" },
+      { property: "og:title", content: "Risk Analysis & GIS Center — Aura Crisis Network" },
       {
         property: "og:description",
         content: "Predictive flood, landslide and seismic risk modelling for the Marmara region.",
@@ -74,9 +78,20 @@ const tooltipStyle = {
 };
 
 function RiskAnalysis() {
-  const [clickedPoint, setClickedPoint] = useState<{ lat: number; lng: number } | null>({ lat: 41.01, lng: 28.97 });
+  const search = useSearch({ from: "/risk" });
+  const [clickedPoint, setClickedPoint] = useState<{ lat: number; lng: number } | null>({
+    lat: search?.lat ?? 41.01,
+    lng: search?.lng ?? 28.97,
+  });
   const [bufferRadius, setBufferRadius] = useState(5000);
+  const [selectedZone, setSelectedZone] = useState<RiskZoneDto | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (search?.lat && search?.lng) {
+      setClickedPoint({ lat: search.lat, lng: search.lng });
+    }
+  }, [search?.lat, search?.lng]);
 
   const { data: districtRisks = [], isLoading: isRisksLoading } = useRiskAnalysis();
   const { data: events = [] } = useActiveEvents();
@@ -91,6 +106,16 @@ function RiskAnalysis() {
     clickedPoint?.lng ?? null,
     bufferRadius
   );
+
+  function handleFitBounds(zone: RiskZoneDto) {
+    setSelectedZone(zone);
+    if (zone.polygonCoordinates && zone.polygonCoordinates.length > 0 && zone.polygonCoordinates[0].length > 0) {
+      const ring = zone.polygonCoordinates[0];
+      const avgLat = ring.reduce((a, b) => a + b.latitude, 0) / ring.length;
+      const avgLng = ring.reduce((a, b) => a + b.longitude, 0) / ring.length;
+      setClickedPoint({ lat: Number(avgLat.toFixed(4)), lng: Number(avgLng.toFixed(4)) });
+    }
+  }
 
   const avgSeismic = districtRisks.length
     ? Math.round(districtRisks.reduce((a, b) => a + b.seismicRisk, 0) / districtRisks.length)
@@ -122,7 +147,7 @@ function RiskAnalysis() {
   return (
     <AppShell
       title="Risk Analiz & PostGIS Harita Merkezi"
-      description="Uzamsal poligon kesişim analizi (Point-in-Polygon Geofencing) ve etki tampon çemberi (Buffer Circle)."
+      description="Uzamsal poligon kesişim analizi (Point-in-Polygon Geofencing), Mini Search ve Fit Bounds poligon odaklanma."
       actions={
         <div className="flex items-center gap-2">
           <HasRole roles={["Operator", "Admin"]}>
@@ -179,7 +204,10 @@ function RiskAnalysis() {
             events={events}
             active={{ heatmap: false, risk: true }}
             bufferPoint={clickedPoint ? { ...clickedPoint, radiusMeters: bufferRadius } : null}
-            onMapClick={(point) => setClickedPoint(point)}
+            onMapClick={(point) => {
+              setClickedPoint(point);
+              setSelectedZone(null);
+            }}
             className="h-[360px] w-full rounded-b-xl"
           />
         </PanelCard>
@@ -187,17 +215,24 @@ function RiskAnalysis() {
         <PanelCard title="Harita Kesişim Analizi (Point-in-Polygon)">
           <div className="p-4 space-y-4">
             {clickedPoint ? (
-              <div className="rounded-xl border border-border bg-background/50 p-3">
-                <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                  <MapPin className="h-3 w-3 text-primary" /> Tıklanan Koordinat
-                </span>
-                <p className="num mt-1 text-[13px] font-semibold">
-                  {clickedPoint.lat}° N, {clickedPoint.lng}° E
-                </p>
+              <div className="rounded-xl border border-border bg-background/50 p-3 flex items-center justify-between">
+                <div>
+                  <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <MapPin className="h-3 w-3 text-primary" /> Odak Koordinatı (Mini Search / Click)
+                  </span>
+                  <p className="num mt-0.5 text-[13px] font-semibold">
+                    {clickedPoint.lat}° N, {clickedPoint.lng}° E
+                  </p>
+                </div>
+                {selectedZone && (
+                  <span className="rounded bg-primary/20 px-2 py-0.5 text-[10px] font-medium text-primary">
+                    Fit Bounds Aktif
+                  </span>
+                )}
               </div>
             ) : (
               <div className="text-[12px] text-muted-foreground">
-                Kesişim analizi için haritada bir noktaya tıklayınız.
+                Kesişim analizi için haritada bir noktaya tıklayınız veya üstteki arama çubuğunu kullanınız.
               </div>
             )}
 
@@ -214,12 +249,32 @@ function RiskAnalysis() {
               ) : (
                 <div className="space-y-2 max-h-48 overflow-y-auto scroll-slim">
                   {intersectingZones.map((z) => (
-                    <div key={z.id} className="rounded-lg border border-border bg-foreground/[0.03] p-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[12px] font-medium">{z.name}</span>
-                        <span className="num text-[11px] font-bold text-red-400">{z.severity}/100</span>
+                    <div
+                      key={z.id}
+                      onClick={() => handleFitBounds(z)}
+                      className={cn(
+                        "group rounded-lg border p-2.5 transition-all duration-200 cursor-pointer flex items-center justify-between",
+                        selectedZone?.id === z.id
+                          ? "border-primary bg-primary/10 shadow-sm"
+                          : "border-border bg-foreground/[0.03] hover:border-border/80 hover:bg-foreground/[0.06]"
+                      )}
+                    >
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[12px] font-medium group-hover:text-primary transition-colors">
+                            {z.name}
+                          </span>
+                          <span className="num text-[10px] font-bold text-red-400">{z.severity}/100</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">{z.district} · {z.type}</p>
                       </div>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">{z.district} · {z.type}</p>
+
+                      <button
+                        title="Fit Bounds: Poligona Odaklan"
+                        className="flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground hover:text-primary hover:border-primary transition-colors"
+                      >
+                        <Maximize2 className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                   ))}
                 </div>

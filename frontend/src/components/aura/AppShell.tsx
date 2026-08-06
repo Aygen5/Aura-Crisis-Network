@@ -1,8 +1,9 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
-import { LogOut, Search, ShieldAlert } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { LogOut, Search, ShieldAlert, MapPin } from "lucide-react";
 import { NAVIGATION_CONFIG } from "@/config";
 import { hasAnyRole, clearStoredAuth, getStoredAuth, isAuthenticated, type AuthResponseDto } from "@/lib/api-client";
+import { SEARCHABLE_LOCATIONS, type SearchableLocation } from "@/lib/geo-turkey";
 import { NotificationPopover } from "./NotificationPopover";
 import { cn } from "@/lib/utils";
 import { StatusDot } from "./primitives";
@@ -26,14 +27,41 @@ export function TopNav({ floating = false }: { floating?: boolean }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [currentUser, setCurrentUser] = useState<AuthResponseDto | null>(null);
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     setCurrentUser(getStoredAuth());
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setSearchOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   function handleLogout() {
     clearStoredAuth();
     navigate({ to: "/login" });
   }
+
+  function handleSelectLocation(loc: SearchableLocation) {
+    setSearchQuery(loc.name);
+    setSearchOpen(false);
+    navigate({
+      to: "/risk",
+      search: { lat: loc.lat, lng: loc.lng } as any,
+    });
+  }
+
+  const matchingLocations = searchQuery.trim()
+    ? SEARCHABLE_LOCATIONS.filter((l) => l.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : [];
 
   const headerItems = NAVIGATION_CONFIG.filter(
     (item) => item.showInHeader && hasAnyRole(item.requiredRoles)
@@ -75,13 +103,45 @@ export function TopNav({ floating = false }: { floating?: boolean }) {
       </nav>
 
       <div className="ml-auto flex items-center gap-3">
-        <label className="group hidden h-9 w-80 items-center gap-2.5 rounded-lg border border-border bg-background/60 px-3 transition-colors duration-200 focus-within:border-ring md:flex">
-          <Search className="h-3.5 w-3.5 text-muted-foreground" />
-          <input
-            placeholder="İl, ilçe veya koordinat ara..."
-            className="w-full bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
-          />
-        </label>
+        <div className="relative hidden md:block" ref={searchRef}>
+          <label className="group flex h-9 w-80 items-center gap-2.5 rounded-lg border border-border bg-background/60 px-3 transition-colors duration-200 focus-within:border-ring">
+            <Search className="h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setSearchOpen(true);
+              }}
+              onFocus={() => setSearchOpen(true)}
+              placeholder="İl, ilçe (Kadıköy, Silivri...) ara..."
+              className="w-full bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
+            />
+          </label>
+
+          {searchOpen && matchingLocations.length > 0 && (
+            <div className="absolute left-0 top-11 z-50 w-80 overflow-hidden rounded-xl border border-border bg-card p-2 shadow-2xl backdrop-blur-xl animate-scale-in">
+              <div className="px-2 py-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                Arama Sonuçları ({matchingLocations.length})
+              </div>
+              <div className="mt-1 space-y-1">
+                {matchingLocations.map((loc) => (
+                  <button
+                    key={loc.name}
+                    onClick={() => handleSelectLocation(loc)}
+                    className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[13px] transition-colors hover:bg-secondary"
+                  >
+                    <span className="flex items-center gap-2 font-medium">
+                      <MapPin className="h-3.5 w-3.5 text-primary" /> {loc.name}
+                    </span>
+                    <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                      {loc.type === "District" ? "İlçe" : "İl"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         <NotificationPopover />
 
