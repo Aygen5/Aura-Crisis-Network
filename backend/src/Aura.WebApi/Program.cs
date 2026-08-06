@@ -66,6 +66,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<CrisisHub>("/hubs/crisis");
+app.MapHub<VehicleTrackingHub>("/hubs/vehicles");
 
 app.MapGet("/health", async (AuraDbContext dbContext) =>
 {
