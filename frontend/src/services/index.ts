@@ -8,3 +8,4 @@ export * from "./risk-zones.service";
 export * from "./gis-tiles.service";
 export * from "./emergency-units.service";
 export * from "./audit-logs.service";
+export * from "./health.service";

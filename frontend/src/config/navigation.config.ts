@@ -74,6 +74,16 @@ export const NAVIGATION_CONFIG: NavItem[] = [
     showInHeader: true,
   },
   {
+    id: "system-health",
+    title: "Sistem Sağlığı",
+    route: "/system-health",
+    icon: "Activity",
+    requiredRoles: ["Admin"],
+    showInSidebar: true,
+    showInMobile: true,
+    showInHeader: true,
+  },
+  {
     id: "settings",
     title: "Ayarlar",
     route: ROUTES.SETTINGS,

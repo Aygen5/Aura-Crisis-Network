@@ -18,6 +18,7 @@ import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as RiskRouteImport } from './routes/risk'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as SystemHealthRouteImport } from './routes/system-health'
 import { Route as EventIdRouteImport } from './routes/event.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -65,6 +66,11 @@ const SignupRoute = SignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SystemHealthRoute = SystemHealthRouteImport.update({
+  id: '/system-health',
+  path: '/system-health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EventIdRoute = EventIdRouteImport.update({
   id: '/event/$id',
   path: '/event/$id',
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/risk': typeof RiskRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/system-health': typeof SystemHealthRoute
   '/event/$id': typeof EventIdRoute
 }
 export interface FileRoutesByTo {
@@ -93,6 +100,7 @@ export interface FileRoutesByTo {
   '/risk': typeof RiskRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/system-health': typeof SystemHealthRoute
   '/event/$id': typeof EventIdRoute
 }
 export interface FileRoutesById {
@@ -106,6 +114,7 @@ export interface FileRoutesById {
   '/risk': typeof RiskRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/system-health': typeof SystemHealthRoute
   '/event/$id': typeof EventIdRoute
 }
 export interface FileRouteTypes {
@@ -120,6 +129,7 @@ export interface FileRouteTypes {
     | '/risk'
     | '/settings'
     | '/signup'
+    | '/system-health'
     | '/event/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -132,6 +142,7 @@ export interface FileRouteTypes {
     | '/risk'
     | '/settings'
     | '/signup'
+    | '/system-health'
     | '/event/$id'
   id:
     | '__root__'
@@ -144,6 +155,7 @@ export interface FileRouteTypes {
     | '/risk'
     | '/settings'
     | '/signup'
+    | '/system-health'
     | '/event/$id'
   fileRoutesById: FileRoutesById
 }
@@ -157,6 +169,7 @@ export interface RootRouteChildren {
   RiskRoute: typeof RiskRoute
   SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
+  SystemHealthRoute: typeof SystemHealthRoute
   EventIdRoute: typeof EventIdRoute
 }
 
@@ -225,6 +238,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/system-health': {
+      id: '/system-health'
+      path: '/system-health'
+      fullPath: '/system-health'
+      preLoaderRoute: typeof SystemHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/event/$id': {
       id: '/event/$id'
       path: '/event/$id'
@@ -245,6 +265,7 @@ const rootRouteChildren: RootRouteChildren = {
   RiskRoute: RiskRoute,
   SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
+  SystemHealthRoute: SystemHealthRoute,
   EventIdRoute: EventIdRoute,
 }
 export const routeTree = rootRouteImport

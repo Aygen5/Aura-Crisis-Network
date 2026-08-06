@@ -8,6 +8,7 @@ using Aura.Infrastructure.Persistence;
 using Aura.Infrastructure.Persistence.Interceptors;
 using Aura.Infrastructure.Persistence.Repositories;
 using Aura.Infrastructure.Services;
+using Aura.Infrastructure.Telemetry;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -33,6 +34,8 @@ public static class DependencyInjection
                 npgsqlOptions.UseNetTopologySuite())
                 .AddInterceptors(auditInterceptor);
         });
+
+        services.AddAuraTelemetryAndHealth(configuration, connectionString);
 
         var redisConnectionString = configuration.GetConnectionString("Redis");
         if (!string.IsNullOrWhiteSpace(redisConnectionString))

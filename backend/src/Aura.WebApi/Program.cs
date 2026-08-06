@@ -1,13 +1,31 @@
 using System.Text;
+using System.Text.Json;
 using Aura.Application;
 using Aura.Infrastructure;
+using Aura.Infrastructure.Middlewares;
 using Aura.Infrastructure.Persistence;
 using Aura.WebApi.Hubs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
+using OpenTelemetry.Metrics;
+using Serilog;
+using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
+    .Enrich.FromLogContext()
+    .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
+    .WriteTo.File("logs/aura-log-.txt", rollingInterval: RollingInterval.Day, outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -55,6 +73,8 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+app.UseMiddleware<CorrelationIdMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -67,13 +87,40 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<CrisisHub>("/hubs/crisis");
 app.MapHub<VehicleTrackingHub>("/hubs/vehicles");
+app.MapPrometheusScrapingEndpoint();
 
-app.MapGet("/health", async (AuraDbContext dbContext) =>
+app.MapHealthChecks("/health", new HealthCheckOptions
 {
-    var canConnect = await dbContext.Database.CanConnectAsync();
-    return canConnect
-        ? Results.Ok(new { Status = "Healthy", Database = "Connected", Timestamp = DateTimeOffset.UtcNow })
-        : Results.Problem("Database connection failed", statusCode: 503);
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var result = JsonSerializer.Serialize(new
+        {
+            Status = report.Status.ToString(),
+            TotalDurationMs = report.TotalDuration.TotalMilliseconds,
+            CheckedAt = DateTimeOffset.UtcNow,
+            Entries = report.Entries.Select(e => new
+            {
+                Component = e.Key,
+                Status = e.Value.Status.ToString(),
+                DurationMs = e.Value.Duration.TotalMilliseconds,
+                Description = e.Value.Description,
+                Exception = e.Value.Exception?.Message
+            })
+        }, new JsonSerializerOptions { WriteIndented = true });
+
+        await context.Response.WriteAsync(result);
+    }
+});
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false
+});
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
 });
 
 using (var scope = app.Services.CreateScope())

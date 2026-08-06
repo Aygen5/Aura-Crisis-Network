@@ -7,3 +7,4 @@ export * from "./useRiskZonesQuery";
 export * from "./useGisTilesQuery";
 export * from "./useEmergencyUnitsQuery";
 export * from "./useAuditLogsQuery";
+export * from "./useHealthQuery";

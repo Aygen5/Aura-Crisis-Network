@@ -8,3 +8,4 @@ export * from "./notification.types";
 export * from "./gis-tile.types";
 export * from "./emergency-unit.types";
 export * from "./audit-log.types";
+export * from "./health.types";

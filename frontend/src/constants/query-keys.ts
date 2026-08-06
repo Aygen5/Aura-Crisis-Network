@@ -34,6 +34,9 @@ export const QUERY_KEYS = {
     all: ["auditLogs"] as const,
     paged: (params: any) => ["auditLogs", params] as const,
   },
+  health: {
+    system: () => ["health", "system"] as const,
+  },
 } as const;
 
 export const QUERY_CACHE_TTL = {
@@ -44,4 +47,5 @@ export const QUERY_CACHE_TTL = {
   GIS_CLUSTERS: 30000,
   REPORTS: 60000,
   AUDIT_LOGS: 30000,
+  HEALTH_SYSTEM: 5000,
 } as const;
