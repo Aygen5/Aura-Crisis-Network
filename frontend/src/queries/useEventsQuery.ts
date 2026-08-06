@@ -1,18 +1,22 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { eventsService } from "@/services";
+import { QUERY_KEYS, QUERY_CACHE_TTL } from "@/constants";
 
 export function useActiveEvents() {
   return useQuery({
-    queryKey: ["events", "active"],
+    queryKey: QUERY_KEYS.events.active(),
     queryFn: () => eventsService.getActiveEvents(),
+    staleTime: QUERY_CACHE_TTL.EVENTS_ACTIVE,
+    gcTime: 600000,
   });
 }
 
 export function useEventById(id: string) {
   return useQuery({
-    queryKey: ["events", id],
+    queryKey: QUERY_KEYS.events.detail(id),
     queryFn: () => eventsService.getEventById(id),
     enabled: !!id,
+    staleTime: QUERY_CACHE_TTL.EVENTS_ACTIVE,
   });
 }
 
@@ -21,8 +25,8 @@ export function useEscalateEvent() {
   return useMutation({
     mutationFn: (id: string) => eventsService.escalateEvent(id),
     onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: ["events"] });
-      queryClient.invalidateQueries({ queryKey: ["events", id] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.all });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.detail(id) });
     },
   });
 }

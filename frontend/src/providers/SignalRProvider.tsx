@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { QUERY_KEYS } from "@/constants";
 import {
   startSignalRConnection,
   onEventCreated,
@@ -33,9 +34,9 @@ export function SignalRProvider({ children }: { children: ReactNode }) {
     });
 
     const unsubEvent = onEventCreated((newEvent) => {
-      queryClient.invalidateQueries({ queryKey: ["events"] });
-      queryClient.invalidateQueries({ queryKey: ["analytics"] });
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.active() });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.analytics.summary() });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notifications.all });
 
       toast.warning(`Yeni ${newEvent.source} Afet Uyarısı: ${newEvent.title}`, {
         description: `${newEvent.district} · Şiddet: ${newEvent.severity}/100`,
@@ -43,9 +44,9 @@ export function SignalRProvider({ children }: { children: ReactNode }) {
     });
 
     const unsubReport = onReportStatusChanged((updatedReport) => {
-      queryClient.invalidateQueries({ queryKey: ["reports"] });
-      queryClient.invalidateQueries({ queryKey: ["analytics"] });
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.reports.all });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.analytics.summary() });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notifications.all });
 
       toast.info(`İhbar Durumu Güncellendi: ${updatedReport.title}`, {
         description: `${updatedReport.district} · Yeni Durum: ${updatedReport.status}`,
@@ -53,7 +54,10 @@ export function SignalRProvider({ children }: { children: ReactNode }) {
     });
 
     const unsubVehicle = onVehiclePositionUpdated((updatedUnit) => {
-      queryClient.invalidateQueries({ queryKey: ["emergencyUnits"] });
+      queryClient.setQueryData<EmergencyUnitDto[]>(QUERY_KEYS.emergencyUnits.all, (old) => {
+        if (!old) return [updatedUnit];
+        return old.map((u) => (u.id === updatedUnit.id ? updatedUnit : u));
+      });
     });
 
     const interval = setInterval(() => {
