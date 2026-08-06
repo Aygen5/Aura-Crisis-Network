@@ -17,6 +17,7 @@ public class AuraDbContext : IdentityDbContext<ApplicationUser, ApplicationRole,
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+    public DbSet<RiskZone> RiskZones => Set<RiskZone>();
 
     public AuraDbContext(DbContextOptions<AuraDbContext> options) : base(options)
     {

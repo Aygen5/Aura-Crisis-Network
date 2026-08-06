@@ -50,9 +50,9 @@ public static class DependencyInjection
         services.AddScoped<ICitizenReportRepository, CitizenReportRepository>();
         services.AddScoped<IDistrictRiskRepository, DistrictRiskRepository>();
         services.AddScoped<IOperatorRepository, OperatorRepository>();
-
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IOutboxRepository, OutboxRepository>();
+        services.AddScoped<IRiskZoneRepository, RiskZoneRepository>();
 
         services.AddScoped<INotificationChannel, SignalRNotificationChannel>();
         services.AddScoped<INotificationChannel, EmailNotificationChannel>();
