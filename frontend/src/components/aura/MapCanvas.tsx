@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo, useCallback, useMemo } from "react";
 import { DisasterIcon } from "./DisasterIcon";
 import { disasterMeta, type EventDto, type RiskZoneDto, type MarkerClusterDto, type EmergencyUnitDto } from "@/lib/api-client";
 import { TURKEY_PATHS, NEIGHBOR_PATHS, CITIES, SEA_LABELS } from "@/lib/geo-turkey";
@@ -22,15 +22,7 @@ type Props = {
   compact?: boolean;
 };
 
-const defaultRiskPolygons: Array<{
-  id: string;
-  name: string;
-  type: string;
-  district: string;
-  severity: number;
-  color: string;
-  path: string;
-}> = [
+const defaultRiskPolygons = [
   {
     id: "rz-1",
     name: "Kuzey Anadolu Fay Çizgisi Sismik Poligonu",
@@ -77,7 +69,7 @@ const heatNodes = [
   { id: "hn-5", cx: 340, cy: 300, r: 85, gradient: "url(#heatLow)", density: "Seyrek (Mavi)", label: "Bursa / Nilüfer" },
 ];
 
-export function BaseMap({
+export const BaseMap = memo(function BaseMap({
   heatmap = false,
   risk = false,
   traffic = false,
@@ -98,7 +90,7 @@ export function BaseMap({
 }) {
   const [hoveredZone, setHoveredZone] = useState<any | null>(null);
 
-  function handleSvgClick(e: React.MouseEvent<SVGSVGElement>) {
+  const handleSvgClick = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -107,7 +99,7 @@ export function BaseMap({
     const lng = Number((26.0 + (x / rect.width) * 19.0).toFixed(4));
 
     onMapClick?.({ lat, lng });
-  }
+  }, [onMapClick]);
 
   return (
     <div
@@ -268,7 +260,80 @@ export function BaseMap({
       </svg>
     </div>
   );
-}
+});
+
+const VehicleMarker = memo(function VehicleMarker({
+  unit,
+  selected,
+  onSelect,
+}: {
+  unit: EmergencyUnitDto;
+  selected: boolean;
+  onSelect?: (unit: EmergencyUnitDto) => void;
+}) {
+  const getUnitIcon = useCallback((type: string) => {
+    switch (type) {
+      case "Ambulance":
+        return <Ambulance className="h-3.5 w-3.5" />;
+      case "FireEngine":
+        return <Flame className="h-3.5 w-3.5" />;
+      case "PolicePatrol":
+        return <Shield className="h-3.5 w-3.5" />;
+      default:
+        return <Truck className="h-3.5 w-3.5" />;
+    }
+  }, []);
+
+  const getStatusColor = useCallback((status: string) => {
+    switch (status) {
+      case "Dispatched":
+        return "bg-amber-500 border-amber-300 text-amber-950 animate-pulse";
+      case "OnScene":
+        return "bg-red-500 border-red-300 text-red-950 animate-pulse";
+      case "Maintenance":
+        return "bg-zinc-600 border-zinc-400 text-zinc-100";
+      default:
+        return "bg-emerald-500 border-emerald-300 text-emerald-950";
+    }
+  }, []);
+
+  const handleClick = useCallback(() => {
+    onSelect?.(unit);
+  }, [unit, onSelect]);
+
+  const leftPos = useMemo(() => `${Math.max(4, Math.min(96, ((unit.longitude - 26.0) / 19.0) * 100))}%`, [unit.longitude]);
+  const topPos = useMemo(() => `${Math.max(4, Math.min(96, ((42.0 - unit.latitude) / 6.0) * 100))}%`, [unit.latitude]);
+  const statusStyle = useMemo(() => getStatusColor(unit.status), [unit.status, getStatusColor]);
+  const icon = useMemo(() => getUnitIcon(unit.type), [unit.type, getUnitIcon]);
+
+  return (
+    <button
+      onClick={handleClick}
+      style={{ left: leftPos, top: topPos }}
+      className={cn(
+        "pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ease-out z-40",
+        selected ? "scale-125 ring-2 ring-white" : "hover:scale-110"
+      )}
+    >
+      <div className="flex flex-col items-center">
+        <span className={cn("flex h-7 w-7 items-center justify-center rounded-full border-2 shadow-lg backdrop-blur-md", statusStyle)}>
+          {icon}
+        </span>
+        <span className="mt-0.5 rounded bg-black/80 px-1 py-0.2 text-[9px] font-bold text-white shadow">
+          {unit.callSign}
+        </span>
+      </div>
+    </button>
+  );
+}, (prev, next) => (
+  prev.selected === next.selected &&
+  prev.unit.id === next.unit.id &&
+  prev.unit.latitude === next.unit.latitude &&
+  prev.unit.longitude === next.unit.longitude &&
+  prev.unit.status === next.unit.status &&
+  prev.unit.speedKmh === next.unit.speedKmh &&
+  prev.unit.headingDegrees === next.unit.headingDegrees
+));
 
 export function MapCanvas({
   events,
@@ -285,32 +350,6 @@ export function MapCanvas({
   onMapClick,
   className,
 }: Props) {
-  function getUnitIcon(type: string) {
-    switch (type) {
-      case "Ambulance":
-        return <Ambulance className="h-3.5 w-3.5" />;
-      case "FireEngine":
-        return <Flame className="h-3.5 w-3.5" />;
-      case "PolicePatrol":
-        return <Shield className="h-3.5 w-3.5" />;
-      default:
-        return <Truck className="h-3.5 w-3.5" />;
-    }
-  }
-
-  function getStatusColor(status: string) {
-    switch (status) {
-      case "Dispatched":
-        return "bg-amber-500 border-amber-300 text-amber-950 animate-pulse";
-      case "OnScene":
-        return "bg-red-500 border-red-300 text-red-950 animate-pulse";
-      case "Maintenance":
-        return "bg-zinc-600 border-zinc-400 text-zinc-100";
-      default:
-        return "bg-emerald-500 border-emerald-300 text-emerald-950";
-    }
-  }
-
   return (
     <div className={cn("relative overflow-hidden rounded-xl border border-border", className)}>
       <BaseMap
@@ -383,39 +422,14 @@ export function MapCanvas({
               );
             })}
 
-        {units.map((u) => {
-          const selected = selectedUnitId === u.id;
-          const statusStyle = getStatusColor(u.status);
-
-          return (
-            <button
-              key={u.id}
-              onClick={() => onUnitSelect?.(u)}
-              style={{
-                left: `${Math.max(4, Math.min(96, ((u.longitude - 26.0) / 19.0) * 100))}%`,
-                top: `${Math.max(4, Math.min(96, ((42.0 - u.latitude) / 6.0) * 100))}%`,
-              }}
-              className={cn(
-                "pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ease-out z-40",
-                selected ? "scale-125 ring-2 ring-white" : "hover:scale-110"
-              )}
-            >
-              <div className="flex flex-col items-center">
-                <span
-                  className={cn(
-                    "flex h-7 w-7 items-center justify-center rounded-full border-2 shadow-lg backdrop-blur-md",
-                    statusStyle
-                  )}
-                >
-                  {getUnitIcon(u.type)}
-                </span>
-                <span className="mt-0.5 rounded bg-black/80 px-1 py-0.2 text-[9px] font-bold text-white shadow">
-                  {u.callSign}
-                </span>
-              </div>
-            </button>
-          );
-        })}
+        {units.map((u) => (
+          <VehicleMarker
+            key={u.id}
+            unit={u}
+            selected={selectedUnitId === u.id}
+            onSelect={onUnitSelect}
+          />
+        ))}
       </div>
     </div>
   );
