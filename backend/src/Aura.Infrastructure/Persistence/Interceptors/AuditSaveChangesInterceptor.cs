@@ -46,6 +46,11 @@ public class AuditSaveChangesInterceptor : SaveChangesInterceptor
         Guid? userId = Guid.TryParse(userIdStr, out var parsedGuid) ? parsedGuid : null;
         var userEmail = _currentUserService.Email ?? httpContext?.User?.FindFirstValue(ClaimTypes.Email) ?? httpContext?.User?.Identity?.Name;
         var ipAddress = GetClientIpAddress(httpContext);
+        var userAgent = httpContext?.Request.Headers["User-Agent"].FirstOrDefault();
+        var correlationId = httpContext?.Request.Headers["X-Correlation-ID"].FirstOrDefault()
+            ?? httpContext?.Request.Headers["X-Request-ID"].FirstOrDefault()
+            ?? httpContext?.TraceIdentifier;
+        var requestId = httpContext?.TraceIdentifier;
 
         var auditEntries = new List<AuditLog>();
 
@@ -62,6 +67,8 @@ public class AuditSaveChangesInterceptor : SaveChangesInterceptor
             var oldValues = new Dictionary<string, object?>();
             var newValues = new Dictionary<string, object?>();
             var changedColumns = new List<string>();
+
+            var action = entry.State.ToString();
 
             foreach (var property in entry.Properties)
             {
@@ -93,6 +100,18 @@ public class AuditSaveChangesInterceptor : SaveChangesInterceptor
                                 oldValues[propertyName] = original;
                                 newValues[propertyName] = current;
                                 changedColumns.Add(propertyName);
+
+                                if (propertyName.Equals("IsDeleted", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    if (Equals(current, true))
+                                    {
+                                        action = "SoftDeleted";
+                                    }
+                                    else if (Equals(original, true) && Equals(current, false))
+                                    {
+                                        action = "Restored";
+                                    }
+                                }
                             }
                         }
                         break;
@@ -104,7 +123,6 @@ public class AuditSaveChangesInterceptor : SaveChangesInterceptor
                 continue;
             }
 
-            var action = entry.State.ToString();
             var oldJson = oldValues.Count > 0 ? JsonSerializer.Serialize(oldValues) : null;
             var newJson = newValues.Count > 0 ? JsonSerializer.Serialize(newValues) : null;
             var colsJson = changedColumns.Count > 0 ? JsonSerializer.Serialize(changedColumns) : null;
@@ -113,6 +131,9 @@ public class AuditSaveChangesInterceptor : SaveChangesInterceptor
                 userId,
                 userEmail,
                 ipAddress,
+                userAgent,
+                correlationId,
+                requestId,
                 entityName,
                 action,
                 primaryKey,
