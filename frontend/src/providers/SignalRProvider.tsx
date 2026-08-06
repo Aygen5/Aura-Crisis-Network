@@ -5,25 +5,31 @@ import {
   startSignalRConnection,
   onEventCreated,
   onReportStatusChanged,
+  onVehiclePositionUpdated,
   getSignalRConnection,
+  getVehiclesSignalRConnection,
 } from "@/lib/signalr-client";
-import type { EventDto, CitizenReportDto } from "@/types";
+import type { EventDto, CitizenReportDto, EmergencyUnitDto } from "@/types";
 
 interface SignalRContextType {
   isConnected: boolean;
+  vehiclesConnected: boolean;
   subscribeEventCreated: (callback: (event: EventDto) => void) => () => void;
   subscribeReportStatusChanged: (callback: (report: CitizenReportDto) => void) => () => void;
+  subscribeVehiclePositionUpdated: (callback: (unit: EmergencyUnitDto) => void) => () => void;
 }
 
 const SignalRContext = createContext<SignalRContextType | undefined>(undefined);
 
 export function SignalRProvider({ children }: { children: ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
+  const [vehiclesConnected, setVehiclesConnected] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
     startSignalRConnection().then(() => {
       setIsConnected(true);
+      setVehiclesConnected(true);
     });
 
     const unsubEvent = onEventCreated((newEvent) => {
@@ -46,14 +52,21 @@ export function SignalRProvider({ children }: { children: ReactNode }) {
       });
     });
 
+    const unsubVehicle = onVehiclePositionUpdated((updatedUnit) => {
+      queryClient.invalidateQueries({ queryKey: ["emergencyUnits"] });
+    });
+
     const interval = setInterval(() => {
       const conn = getSignalRConnection();
+      const vConn = getVehiclesSignalRConnection();
       setIsConnected(conn?.state === "Connected");
+      setVehiclesConnected(vConn?.state === "Connected");
     }, 5000);
 
     return () => {
       unsubEvent();
       unsubReport();
+      unsubVehicle();
       clearInterval(interval);
     };
   }, [queryClient]);
@@ -62,8 +75,10 @@ export function SignalRProvider({ children }: { children: ReactNode }) {
     <SignalRContext.Provider
       value={{
         isConnected,
+        vehiclesConnected,
         subscribeEventCreated: onEventCreated,
         subscribeReportStatusChanged: onReportStatusChanged,
+        subscribeVehiclePositionUpdated: onVehiclePositionUpdated,
       }}
     >
       {children}

@@ -6,3 +6,4 @@ export * from "./analytics.service";
 export * from "./notifications.service";
 export * from "./risk-zones.service";
 export * from "./gis-tiles.service";
+export * from "./emergency-units.service";

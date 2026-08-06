@@ -1,18 +1,22 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { DisasterIcon } from "./DisasterIcon";
-import { disasterMeta, type EventDto, type RiskZoneDto, type MarkerClusterDto } from "@/lib/api-client";
+import { disasterMeta, type EventDto, type RiskZoneDto, type MarkerClusterDto, type EmergencyUnitDto } from "@/lib/api-client";
 import { TURKEY_PATHS, NEIGHBOR_PATHS, CITIES, SEA_LABELS } from "@/lib/geo-turkey";
 import { cn } from "@/lib/utils";
+import { Truck, Shield, Ambulance, Flame } from "lucide-react";
 
 type Props = {
   events: EventDto[];
   clusters?: MarkerClusterDto[];
+  units?: EmergencyUnitDto[];
   riskZones?: RiskZoneDto[];
   active?: Record<string, boolean>;
   selectedId?: string | null;
+  selectedUnitId?: string | null;
   bufferPoint?: { lat: number; lng: number; radiusMeters: number } | null;
   onSelect?: (e: EventDto) => void;
   onClusterSelect?: (cluster: MarkerClusterDto) => void;
+  onUnitSelect?: (unit: EmergencyUnitDto) => void;
   onMapClick?: (point: { lat: number; lng: number }) => void;
   className?: string;
   compact?: boolean;
@@ -262,64 +266,6 @@ export function BaseMap({
           </g>
         )}
       </svg>
-
-      {hoveredZone && (
-        <div className="pointer-events-none absolute left-6 top-6 z-40 w-72 rounded-xl border border-border bg-card/95 p-4 shadow-2xl backdrop-blur-xl animate-fade-in">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              {hoveredZone.district}
-            </span>
-            <span
-              className="rounded-full px-2 py-0.5 text-[10px] font-bold text-white"
-              style={{ backgroundColor: hoveredZone.color }}
-            >
-              Şiddet: {hoveredZone.severity}/100
-            </span>
-          </div>
-          <h4 className="mt-1 text-[13px] font-semibold leading-snug">{hoveredZone.name}</h4>
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            PostGIS uzamsal poligon kesişim haritası.
-          </p>
-        </div>
-      )}
-
-      {heatmap && (
-        <div className="pointer-events-none absolute top-4 left-6 z-30 flex items-center gap-3 rounded-lg border border-border bg-card/90 px-3 py-2 text-[11px] backdrop-blur-md shadow-lg">
-          <span className="font-semibold text-muted-foreground">Isı Yoğunluk Lejandı:</span>
-          <div className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
-            <span className="text-blue-400 font-medium">Seyrek (Mavi)</span>
-          </div>
-          <span className="text-muted-foreground">→</span>
-          <div className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-            <span className="text-amber-400 font-medium">Orta (Sarı)</span>
-          </div>
-          <span className="text-muted-foreground">→</span>
-          <div className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-red-400 font-bold">Yoğun (Kırmızı)</span>
-          </div>
-        </div>
-      )}
-
-      {risk && (
-        <div className="pointer-events-none absolute bottom-4 left-6 z-30 flex items-center gap-3 rounded-lg border border-border bg-card/90 px-3 py-2 text-[11px] backdrop-blur-md">
-          <span className="font-semibold text-muted-foreground">Lejand (Legend):</span>
-          <span className="flex items-center gap-1 text-purple-400">
-            <span className="h-2.5 w-2.5 rounded-full bg-purple-500" /> Sismik Fay
-          </span>
-          <span className="flex items-center gap-1 text-red-400">
-            <span className="h-2.5 w-2.5 rounded-full bg-red-500" /> Sel Riski
-          </span>
-          <span className="flex items-center gap-1 text-amber-400">
-            <span className="h-2.5 w-2.5 rounded-full bg-amber-500" /> Heyelan
-          </span>
-          <span className="flex items-center gap-1 text-yellow-400">
-            <span className="h-2.5 w-2.5 rounded-full bg-yellow-500" /> Tahliye
-          </span>
-        </div>
-      )}
     </div>
   );
 }
@@ -327,15 +273,44 @@ export function BaseMap({
 export function MapCanvas({
   events,
   clusters = [],
+  units = [],
   riskZones,
   active,
   selectedId,
+  selectedUnitId,
   bufferPoint,
   onSelect,
   onClusterSelect,
+  onUnitSelect,
   onMapClick,
   className,
 }: Props) {
+  function getUnitIcon(type: string) {
+    switch (type) {
+      case "Ambulance":
+        return <Ambulance className="h-3.5 w-3.5" />;
+      case "FireEngine":
+        return <Flame className="h-3.5 w-3.5" />;
+      case "PolicePatrol":
+        return <Shield className="h-3.5 w-3.5" />;
+      default:
+        return <Truck className="h-3.5 w-3.5" />;
+    }
+  }
+
+  function getStatusColor(status: string) {
+    switch (status) {
+      case "Dispatched":
+        return "bg-amber-500 border-amber-300 text-amber-950 animate-pulse";
+      case "OnScene":
+        return "bg-red-500 border-red-300 text-red-950 animate-pulse";
+      case "Maintenance":
+        return "bg-zinc-600 border-zinc-400 text-zinc-100";
+      default:
+        return "bg-emerald-500 border-emerald-300 text-emerald-950";
+    }
+  }
+
   return (
     <div className={cn("relative overflow-hidden rounded-xl border border-border", className)}>
       <BaseMap
@@ -407,6 +382,40 @@ export function MapCanvas({
                 </button>
               );
             })}
+
+        {units.map((u) => {
+          const selected = selectedUnitId === u.id;
+          const statusStyle = getStatusColor(u.status);
+
+          return (
+            <button
+              key={u.id}
+              onClick={() => onUnitSelect?.(u)}
+              style={{
+                left: `${Math.max(4, Math.min(96, ((u.longitude - 26.0) / 19.0) * 100))}%`,
+                top: `${Math.max(4, Math.min(96, ((42.0 - u.latitude) / 6.0) * 100))}%`,
+              }}
+              className={cn(
+                "pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ease-out z-40",
+                selected ? "scale-125 ring-2 ring-white" : "hover:scale-110"
+              )}
+            >
+              <div className="flex flex-col items-center">
+                <span
+                  className={cn(
+                    "flex h-7 w-7 items-center justify-center rounded-full border-2 shadow-lg backdrop-blur-md",
+                    statusStyle
+                  )}
+                >
+                  {getUnitIcon(u.type)}
+                </span>
+                <span className="mt-0.5 rounded bg-black/80 px-1 py-0.2 text-[9px] font-bold text-white shadow">
+                  {u.callSign}
+                </span>
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

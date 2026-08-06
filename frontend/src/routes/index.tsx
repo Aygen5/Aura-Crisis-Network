@@ -11,6 +11,8 @@ import {
   Plus,
   RotateCcw,
   ServerCog,
+  Shield,
+  Truck,
   X,
 } from "lucide-react";
 import { MapCanvas } from "@/components/aura/MapCanvas";
@@ -18,10 +20,12 @@ import { DisasterIcon } from "@/components/aura/DisasterIcon";
 import { TopNav } from "@/components/aura/AppShell";
 import { AuraBadge, StatCard, StatusDot } from "@/components/aura/primitives";
 import { CreateReportModal } from "@/components/aura/CreateReportModal";
+import { VehicleDetailDrawer } from "@/components/aura/VehicleDetailDrawer";
 import { useActiveEvents } from "@/queries/useEventsQuery";
 import { useAnalyticsSummary } from "@/queries/useAnalyticsQuery";
 import { useClusteredMarkers } from "@/queries/useGisTilesQuery";
-import { disasterMeta, isAuthenticated, type MarkerClusterDto } from "@/lib/api-client";
+import { useEmergencyUnits, useNearestEmergencyUnits } from "@/queries/useEmergencyUnitsQuery";
+import { disasterMeta, isAuthenticated, type EmergencyUnitDto } from "@/lib/api-client";
 import {
   onEventCreated,
   onReportStatusChanged,
@@ -102,6 +106,8 @@ function Segmented({
 
 function CommandCenter() {
   const [selectedId, setSelected] = useState<string | null>(null);
+  const [selectedUnit, setSelectedUnit] = useState<EmergencyUnitDto | null>(null);
+  const [clickPoint, setClickPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [active, setActive] = useState<Record<string, boolean>>({
     earthquake: true,
     flood: true,
@@ -119,6 +125,13 @@ function CommandCenter() {
 
   const { data: events = [] } = useActiveEvents();
   const { data: summary } = useAnalyticsSummary();
+  const { data: units = [] } = useEmergencyUnits();
+
+  const { data: nearestUnits = [] } = useNearestEmergencyUnits(
+    clickPoint?.lat ?? null,
+    clickPoint?.lng ?? null,
+    5
+  );
 
   const { data: clusters = [] } = useClusteredMarkers({
     minLat: 35.0,
@@ -161,12 +174,15 @@ function CommandCenter() {
 
   const selectedEvent = events.find((e) => e.id === selectedId);
 
+  const availableUnitsCount = units.filter((u) => u.status === "Available").length;
+  const dispatchedUnitsCount = units.filter((u) => u.status === "Dispatched" || u.status === "OnScene").length;
+
   function handleToggle(key: string) {
     setActive((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
-  function handleClusterSelect(cluster: MarkerClusterDto) {
-    setSelected(null);
+  function handleMapClick(point: { lat: number; lng: number }) {
+    setClickPoint(point);
   }
 
   return (
@@ -174,10 +190,13 @@ function CommandCenter() {
       <MapCanvas
         events={events}
         clusters={clusters}
+        units={units}
         active={active}
         selectedId={selectedId}
+        selectedUnitId={selectedUnit?.id}
         onSelect={(e) => setSelected(e.id)}
-        onClusterSelect={handleClusterSelect}
+        onUnitSelect={(u) => setSelectedUnit(u)}
+        onMapClick={handleMapClick}
         className="absolute inset-0 h-full w-full border-none rounded-none"
       />
 
@@ -193,6 +212,14 @@ function CommandCenter() {
         />
         <StatCard
           className="pointer-events-auto"
+          label="Saha Filosu"
+          value={`${units.length} Araç`}
+          tone="online"
+          delta={`${availableUnitsCount} Müsait / ${dispatchedUnitsCount} Görevde`}
+          icon={<Truck className="h-3.5 w-3.5" />}
+        />
+        <StatCard
+          className="pointer-events-auto"
           label="Max Büyüklük"
           value={summary ? `${summary.highestEarthquakeMagnitude.toFixed(1)} ML` : "0.0 ML"}
           tone="critical"
@@ -201,18 +228,10 @@ function CommandCenter() {
         />
         <StatCard
           className="pointer-events-auto"
-          label="Bekleyen İhbarlar"
-          value={summary ? summary.pendingReportsCount.toString() : "0"}
-          tone="warning"
-          delta="112 Entegrasyon"
-          icon={<FileWarning className="h-3.5 w-3.5" />}
-        />
-        <StatCard
-          className="pointer-events-auto"
           label="İzlenen İlçeler"
           value={summary ? `${summary.totalDistrictsMonitored}` : "14"}
           tone="online"
-          delta="PostGIS / Vector Tile"
+          delta="PostGIS KNN Active"
           icon={<ServerCog className="h-3.5 w-3.5" />}
         />
       </div>
@@ -273,26 +292,54 @@ function CommandCenter() {
       </aside>
 
       <div className="absolute bottom-28 right-6 top-[76px] z-30 flex w-[300px] flex-col gap-3">
+        {clickPoint && nearestUnits.length > 0 && (
+          <section className="glass rounded-xl p-4 animate-slide-in">
+            <div className="flex items-center justify-between border-b border-white/10 pb-2">
+              <h2 className="text-[13px] font-semibold flex items-center gap-1.5">
+                <Shield className="h-4 w-4 text-emerald-400" /> PostGIS KNN En Yakın Ekipler
+              </h2>
+              <button
+                onClick={() => setClickPoint(null)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <div className="mt-2 space-y-2 max-h-48 overflow-y-auto scroll-slim">
+              {nearestUnits.map((u) => (
+                <div
+                  key={u.id}
+                  onClick={() => setSelectedUnit(u)}
+                  className="flex items-center justify-between rounded-lg bg-foreground/5 p-2 text-xs cursor-pointer hover:bg-foreground/10 transition-colors"
+                >
+                  <div>
+                    <span className="font-bold text-foreground">{u.callSign}</span>
+                    <span className="block text-[10px] text-muted-foreground">{u.plateNumber}</span>
+                  </div>
+                  <span className="num font-bold text-emerald-400">
+                    {u.distanceKmFromTarget ?? 0} km
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         <section className="glass rounded-xl p-4 animate-fade-in">
           <div className="flex items-center justify-between">
-            <h2 className="text-[13px] font-semibold">Sistem Durumu</h2>
-            <AuraBadge tone="online">PostGIS Vector Tile</AuraBadge>
+            <h2 className="text-[13px] font-semibold">Saha Filo Takibi</h2>
+            <AuraBadge tone="online">/hubs/vehicles</AuraBadge>
           </div>
           <ul className="mt-3 space-y-2">
             <li className="flex items-center gap-2 text-[12px]">
               <StatusDot tone="online" pulse={false} />
-              <span className="flex-1 text-foreground/90">PostgreSQL + ST_AsMVT</span>
-              <span className="num text-muted-foreground">Aktif</span>
+              <span className="flex-1 text-foreground/90">PostGIS KNN Hesabı</span>
+              <span className="num text-emerald-400 font-bold">Milisaniye</span>
             </li>
             <li className="flex items-center gap-2 text-[12px]">
               <StatusDot tone="online" pulse={false} />
-              <span className="flex-1 text-foreground/90">Server Marker Clusters</span>
-              <span className="num text-primary font-bold">{clusters.length} Küme</span>
-            </li>
-            <li className="flex items-center gap-2 text-[12px]">
-              <StatusDot tone="online" pulse={false} />
-              <span className="flex-1 text-foreground/90">SignalR WebSockets</span>
-              <span className="num text-muted-foreground">Bağlı</span>
+              <span className="flex-1 text-foreground/90">5s Canlı GPS Akışı</span>
+              <span className="num text-primary font-bold">{units.length} Araç</span>
             </li>
           </ul>
         </section>
@@ -402,43 +449,11 @@ function CommandCenter() {
         </div>
       </div>
 
-      {selectedEvent && (
-        <div className="glass absolute bottom-28 left-1/2 z-40 w-[420px] -translate-x-1/2 rounded-xl p-5 animate-scale-in">
-          <div className="flex items-start gap-3">
-            <span
-              className="flex h-10 w-10 items-center justify-center rounded-lg border border-current/25 bg-background/50"
-              style={{ color: disasterMeta[selectedEvent.type]?.color }}
-            >
-              <span className="h-5 w-5">
-                <DisasterIcon type={selectedEvent.type} />
-              </span>
-            </span>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-[15px] font-semibold">{selectedEvent.title}</h3>
-              <p className="mt-0.5 text-[12px] text-muted-foreground">
-                {selectedEvent.district}, {selectedEvent.locationName}
-              </p>
-            </div>
-            <button
-              onClick={() => setSelected(null)}
-              className="text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-3 border-t border-white/8 pt-3 text-[12px]">
-            <div>
-              <span className="text-muted-foreground">Etki Şiddeti</span>
-              <p className="num mt-0.5 font-semibold text-primary">{selectedEvent.metric} {selectedEvent.metricLabel}</p>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Veri Kaynağı</span>
-              <p className="mt-0.5 font-semibold">{selectedEvent.source}</p>
-            </div>
-          </div>
-        </div>
-      )}
+      <VehicleDetailDrawer
+        unit={selectedUnit}
+        events={events}
+        onClose={() => setSelectedUnit(null)}
+      />
 
       <button
         onClick={() => setCreateModalOpen(true)}

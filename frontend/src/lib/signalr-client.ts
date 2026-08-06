@@ -1,40 +1,54 @@
 import * as signalR from "@microsoft/signalr";
-import type { CitizenReportDto, EventDto } from "./api-client";
+import type { CitizenReportDto, EventDto, EmergencyUnitDto } from "./api-client";
 
-const HUB_URL = "http://localhost:5000/hubs/crisis";
+const CRISIS_HUB_URL = "http://localhost:5000/hubs/crisis";
+const VEHICLES_HUB_URL = "http://localhost:5000/hubs/vehicles";
 
-let connection: signalR.HubConnection | null = null;
+let crisisConnection: signalR.HubConnection | null = null;
+let vehiclesConnection: signalR.HubConnection | null = null;
 
 export function getSignalRConnection(): signalR.HubConnection {
-  if (!connection) {
-    connection = new signalR.HubConnectionBuilder()
-      .withUrl(HUB_URL, {
+  if (!crisisConnection) {
+    crisisConnection = new signalR.HubConnectionBuilder()
+      .withUrl(CRISIS_HUB_URL, {
         skipNegotiation: false,
-        transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling
+        transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
       })
       .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
       .configureLogging(signalR.LogLevel.Warning)
       .build();
   }
-  return connection;
+  return crisisConnection;
+}
+
+export function getVehiclesSignalRConnection(): signalR.HubConnection {
+  if (!vehiclesConnection) {
+    vehiclesConnection = new signalR.HubConnectionBuilder()
+      .withUrl(VEHICLES_HUB_URL, {
+        skipNegotiation: false,
+        transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
+      })
+      .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
+      .configureLogging(signalR.LogLevel.Warning)
+      .build();
+  }
+  return vehiclesConnection;
 }
 
 export async function startSignalRConnection(): Promise<void> {
-  const conn = getSignalRConnection();
-  if (conn.state === signalR.HubConnectionState.Disconnected) {
-    try {
-      await conn.start();
-    } catch {
-    }
-  }
-}
+  const crisisConn = getSignalRConnection();
+  const vehiclesConn = getVehiclesSignalRConnection();
 
-export async function stopSignalRConnection(): Promise<void> {
-  if (connection && connection.state !== signalR.HubConnectionState.Disconnected) {
+  if (crisisConn.state === signalR.HubConnectionState.Disconnected) {
     try {
-      await connection.stop();
-    } catch {
-    }
+      await crisisConn.start();
+    } catch {}
+  }
+
+  if (vehiclesConn.state === signalR.HubConnectionState.Disconnected) {
+    try {
+      await vehiclesConn.start();
+    } catch {}
   }
 }
 
@@ -58,16 +72,12 @@ export function onReportStatusChanged(callback: (report: CitizenReportDto) => vo
   };
 }
 
-export async function joinDistrictGroup(districtName: string): Promise<void> {
-  const conn = getSignalRConnection();
-  if (conn.state === signalR.HubConnectionState.Connected) {
-    await conn.invoke("JoinDistrictGroup", districtName);
-  }
-}
+export function onVehiclePositionUpdated(callback: (unit: EmergencyUnitDto) => void): () => void {
+  const conn = getVehiclesSignalRConnection();
+  const handler = (data: EmergencyUnitDto) => callback(data);
+  conn.on("VehiclePositionUpdated", handler);
 
-export async function leaveDistrictGroup(districtName: string): Promise<void> {
-  const conn = getSignalRConnection();
-  if (conn.state === signalR.HubConnectionState.Connected) {
-    await conn.invoke("LeaveDistrictGroup", districtName);
-  }
+  return () => {
+    conn.off("VehiclePositionUpdated", handler);
+  };
 }
