@@ -5,6 +5,7 @@ using Aura.Infrastructure.Jobs;
 using Aura.Infrastructure.Notifications;
 using Aura.Infrastructure.Notifications.Channels;
 using Aura.Infrastructure.Persistence;
+using Aura.Infrastructure.Persistence.Interceptors;
 using Aura.Infrastructure.Persistence.Repositories;
 using Aura.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
@@ -23,9 +24,15 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? "Host=localhost;Port=5432;Database=aura_db;Username=aura_user;Password=aura_password_2026!";
 
-        services.AddDbContext<AuraDbContext>(options =>
+        services.AddScoped<AuditSaveChangesInterceptor>();
+
+        services.AddDbContext<AuraDbContext>((sp, options) =>
+        {
+            var auditInterceptor = sp.GetRequiredService<AuditSaveChangesInterceptor>();
             options.UseNpgsql(connectionString, npgsqlOptions =>
-                npgsqlOptions.UseNetTopologySuite()));
+                npgsqlOptions.UseNetTopologySuite())
+                .AddInterceptors(auditInterceptor);
+        });
 
         var redisConnectionString = configuration.GetConnectionString("Redis");
         if (!string.IsNullOrWhiteSpace(redisConnectionString))
@@ -69,6 +76,7 @@ public static class DependencyInjection
         services.AddScoped<IRiskZoneRepository, RiskZoneRepository>();
         services.AddScoped<IGisTileRepository, GisTileRepository>();
         services.AddScoped<IEmergencyUnitRepository, EmergencyUnitRepository>();
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 
         services.AddScoped<INotificationChannel, SignalRNotificationChannel>();
         services.AddScoped<INotificationChannel, EmailNotificationChannel>();

@@ -19,6 +19,7 @@ public class AuraDbContext : IdentityDbContext<ApplicationUser, ApplicationRole,
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<RiskZone> RiskZones => Set<RiskZone>();
     public DbSet<EmergencyUnit> EmergencyUnits => Set<EmergencyUnit>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     public AuraDbContext(DbContextOptions<AuraDbContext> options) : base(options)
     {
