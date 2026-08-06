@@ -23,7 +23,7 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? "Host=127.0.0.1;Port=5432;Database=aura_db;Username=aura_user;Password=aura_password_2026!";
+            ?? "Host=127.0.0.1;Port=5433;Database=aura_db;Username=aura_user;Password=aura_password_2026!";
 
         services.AddScoped<AuditSaveChangesInterceptor>();
 
