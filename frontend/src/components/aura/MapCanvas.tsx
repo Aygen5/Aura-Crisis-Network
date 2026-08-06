@@ -1,16 +1,18 @@
 import { useState, useMemo } from "react";
 import { DisasterIcon } from "./DisasterIcon";
-import { disasterMeta, type EventDto, type RiskZoneDto } from "@/lib/api-client";
+import { disasterMeta, type EventDto, type RiskZoneDto, type MarkerClusterDto } from "@/lib/api-client";
 import { TURKEY_PATHS, NEIGHBOR_PATHS, CITIES, SEA_LABELS } from "@/lib/geo-turkey";
 import { cn } from "@/lib/utils";
 
 type Props = {
   events: EventDto[];
+  clusters?: MarkerClusterDto[];
   riskZones?: RiskZoneDto[];
   active?: Record<string, boolean>;
   selectedId?: string | null;
   bufferPoint?: { lat: number; lng: number; radiusMeters: number } | null;
   onSelect?: (e: EventDto) => void;
+  onClusterSelect?: (cluster: MarkerClusterDto) => void;
   onMapClick?: (point: { lat: number; lng: number }) => void;
   className?: string;
   compact?: boolean;
@@ -324,11 +326,13 @@ export function BaseMap({
 
 export function MapCanvas({
   events,
+  clusters = [],
   riskZones,
   active,
   selectedId,
   bufferPoint,
   onSelect,
+  onClusterSelect,
   onMapClick,
   className,
 }: Props) {
@@ -345,34 +349,64 @@ export function MapCanvas({
       />
 
       <div className="absolute inset-0 pointer-events-none">
-        {events.map((e) => {
-          const meta = disasterMeta[e.type] ?? disasterMeta.Earthquake;
-          const selected = selectedId === e.id;
+        {clusters.length > 0
+          ? clusters.map((c) => {
+              const toneColor =
+                c.maxSeverity >= 80
+                  ? "bg-red-500 border-red-400 shadow-red-500/50 animate-pulse"
+                  : c.maxSeverity >= 50
+                    ? "bg-amber-500 border-amber-400 shadow-amber-500/50"
+                    : "bg-blue-500 border-blue-400 shadow-blue-500/50";
 
-          return (
-            <button
-              key={e.id}
-              onClick={() => onSelect?.(e)}
-              style={{
-                left: `${Math.max(4, Math.min(96, ((e.longitude - 26.0) / 19.0) * 100))}%`,
-                top: `${Math.max(4, Math.min(96, ((42.0 - e.latitude) / 6.0) * 100))}%`,
-              }}
-              className={cn(
-                "pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300",
-                selected ? "z-30 scale-125" : "z-20 hover:scale-110"
-              )}
-            >
-              <span
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-current/30 bg-card/90 shadow-lg backdrop-blur-md"
-                style={{ color: meta.color }}
-              >
-                <span className="h-4 w-4">
-                  <DisasterIcon type={e.type} />
-                </span>
-              </span>
-            </button>
-          );
-        })}
+              return (
+                <button
+                  key={c.clusterId}
+                  onClick={() => onClusterSelect?.(c)}
+                  style={{
+                    left: `${Math.max(4, Math.min(96, ((c.longitude - 26.0) / 19.0) * 100))}%`,
+                    top: `${Math.max(4, Math.min(96, ((42.0 - c.latitude) / 6.0) * 100))}%`,
+                  }}
+                  className="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300 hover:scale-125 z-30"
+                >
+                  <span
+                    className={cn(
+                      "flex h-9 w-9 items-center justify-center rounded-full border-2 text-[12px] font-bold text-white shadow-xl backdrop-blur-md",
+                      toneColor
+                    )}
+                  >
+                    {c.pointCount}
+                  </span>
+                </button>
+              );
+            })
+          : events.map((e) => {
+              const meta = disasterMeta[e.type] ?? disasterMeta.Earthquake;
+              const selected = selectedId === e.id;
+
+              return (
+                <button
+                  key={e.id}
+                  onClick={() => onSelect?.(e)}
+                  style={{
+                    left: `${Math.max(4, Math.min(96, ((e.longitude - 26.0) / 19.0) * 100))}%`,
+                    top: `${Math.max(4, Math.min(96, ((42.0 - e.latitude) / 6.0) * 100))}%`,
+                  }}
+                  className={cn(
+                    "pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300",
+                    selected ? "z-30 scale-125" : "z-20 hover:scale-110"
+                  )}
+                >
+                  <span
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-current/30 bg-card/90 shadow-lg backdrop-blur-md"
+                    style={{ color: meta.color }}
+                  >
+                    <span className="h-4 w-4">
+                      <DisasterIcon type={e.type} />
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
       </div>
     </div>
   );

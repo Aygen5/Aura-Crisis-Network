@@ -20,7 +20,8 @@ import { AuraBadge, StatCard, StatusDot } from "@/components/aura/primitives";
 import { CreateReportModal } from "@/components/aura/CreateReportModal";
 import { useActiveEvents } from "@/queries/useEventsQuery";
 import { useAnalyticsSummary } from "@/queries/useAnalyticsQuery";
-import { disasterMeta, isAuthenticated } from "@/lib/api-client";
+import { useClusteredMarkers } from "@/queries/useGisTilesQuery";
+import { disasterMeta, isAuthenticated, type MarkerClusterDto } from "@/lib/api-client";
 import {
   onEventCreated,
   onReportStatusChanged,
@@ -62,26 +63,52 @@ type NotificationItem = {
 };
 
 const mapLayers = [
-  { key: "earthquake", label: "Depremler" },
-  { key: "flood", label: "Sel / Taşkın" },
-  { key: "wildfire", label: "Yangınlar" },
-  { key: "report", label: "İhbarlar" },
-  { key: "heatmap", label: "Isı Haritası" },
-  { key: "risk", label: "Risk Bölgeleri" },
-];
+  { key: "earthquake", label: "Deprem", color: "#ef4444" },
+  { key: "flood", label: "Sel & Taşkın", color: "#0ea5e9" },
+  { key: "wildfire", label: "Yangın", color: "#f59e0b" },
+  { key: "report", label: "Vatandaş İhbarı", color: "#eab308" },
+  { key: "heatmap", label: "Isı Haritası", color: "#ec4899" },
+  { key: "risk", label: "PostGIS Risk Poligonları", color: "#a855f7" },
+] as const;
+
+function Segmented({
+  options,
+  value,
+  onChange,
+}: {
+  options: string[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex items-center gap-0.5 rounded-lg border border-white/8 bg-foreground/5 p-0.5">
+      {options.map((o) => (
+        <button
+          key={o}
+          onClick={() => onChange(o)}
+          className={cn(
+            "rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors duration-200",
+            value === o
+              ? "bg-foreground text-background shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          {o}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function CommandCenter() {
-  const { data: events = [], refetch: refetchEvents } = useActiveEvents();
-  const { data: summary, refetch: refetchSummary } = useAnalyticsSummary();
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selectedId, setSelected] = useState<string | null>(null);
   const [active, setActive] = useState<Record<string, boolean>>({
-    heatmap: true,
-    risk: true,
     earthquake: true,
     flood: true,
     wildfire: true,
     report: true,
-    traffic: false,
+    heatmap: false,
+    risk: true,
   });
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(64);
@@ -89,6 +116,17 @@ function CommandCenter() {
   const [speed, setSpeed] = useState("1x");
   const [notes, setNotes] = useState<NotificationItem[]>([]);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+
+  const { data: events = [] } = useActiveEvents();
+  const { data: summary } = useAnalyticsSummary();
+
+  const { data: clusters = [] } = useClusteredMarkers({
+    minLat: 35.0,
+    minLng: 25.0,
+    maxLat: 43.0,
+    maxLng: 45.0,
+    zoom: 10,
+  });
 
   useEffect(() => {
     const unsubEvent = onEventCreated((newEvent) => {
@@ -121,23 +159,26 @@ function CommandCenter() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!playing) return;
-    const step = speed === "1x" ? 0.4 : speed === "2x" ? 0.9 : 2.2;
-    const t = setInterval(() => setProgress((p) => (p >= 100 ? 0 : p + step)), 60);
-    return () => clearInterval(t);
-  }, [playing, speed]);
+  const selectedEvent = events.find((e) => e.id === selectedId);
 
-  const selectedEvent = events.find((e) => e.id === selected) ?? null;
+  function handleToggle(key: string) {
+    setActive((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  function handleClusterSelect(cluster: MarkerClusterDto) {
+    setSelected(null);
+  }
 
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-background">
+    <div className="relative h-screen w-screen overflow-hidden bg-background">
       <MapCanvas
         events={events}
+        clusters={clusters}
         active={active}
-        selectedId={selected}
+        selectedId={selectedId}
         onSelect={(e) => setSelected(e.id)}
-        className="absolute inset-0 h-full w-full"
+        onClusterSelect={handleClusterSelect}
+        className="absolute inset-0 h-full w-full border-none rounded-none"
       />
 
       <TopNav floating />
@@ -171,7 +212,7 @@ function CommandCenter() {
           label="İzlenen İlçeler"
           value={summary ? `${summary.totalDistrictsMonitored}` : "14"}
           tone="online"
-          delta="PostGIS / Weather"
+          delta="PostGIS / Vector Tile"
           icon={<ServerCog className="h-3.5 w-3.5" />}
         />
       </div>
@@ -188,13 +229,16 @@ function CommandCenter() {
         <div className="scroll-slim flex-1 overflow-y-auto p-2">
           {events.map((e) => {
             const meta = disasterMeta[e.type] ?? disasterMeta.Earthquake;
+            const isSel = selectedId === e.id;
             return (
               <button
                 key={e.id}
                 onClick={() => setSelected(e.id)}
                 className={cn(
-                  "group mb-1 flex w-full gap-3 rounded-lg border border-transparent p-3 text-left transition-all duration-200 hover:border-border hover:bg-foreground/[0.04]",
-                  selected === e.id && "border-border bg-foreground/[0.06]"
+                  "flex w-full items-start gap-3 rounded-lg p-2.5 text-left transition-all duration-200",
+                  isSel
+                    ? "bg-foreground/10 ring-1 ring-white/15"
+                    : "hover:bg-foreground/5"
                 )}
               >
                 <span
@@ -209,7 +253,7 @@ function CommandCenter() {
                   <span className="flex items-center justify-between gap-2">
                     <span className="truncate text-[13px] font-medium">{e.title}</span>
                     <span className="num shrink-0 text-[11px] text-muted-foreground">
-                      {new Date(e.detectedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(e.detectedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </span>
                   <span className="mt-0.5 block truncate text-[12px] text-muted-foreground">
@@ -232,40 +276,44 @@ function CommandCenter() {
         <section className="glass rounded-xl p-4 animate-fade-in">
           <div className="flex items-center justify-between">
             <h2 className="text-[13px] font-semibold">Sistem Durumu</h2>
-            <AuraBadge tone="online">Canlı PostgreSQL</AuraBadge>
+            <AuraBadge tone="online">PostGIS Vector Tile</AuraBadge>
           </div>
           <ul className="mt-3 space-y-2">
             <li className="flex items-center gap-2 text-[12px]">
               <StatusDot tone="online" pulse={false} />
-              <span className="flex-1 text-foreground/90">PostgreSQL + PostGIS</span>
-              <span className="num text-[11px] text-muted-foreground">Aktif</span>
+              <span className="flex-1 text-foreground/90">PostgreSQL + ST_AsMVT</span>
+              <span className="num text-muted-foreground">Aktif</span>
             </li>
             <li className="flex items-center gap-2 text-[12px]">
               <StatusDot tone="online" pulse={false} />
-              <span className="flex-1 text-foreground/90">Kandilli Ingestion</span>
-              <span className="num text-[11px] text-muted-foreground">60s Polling</span>
+              <span className="flex-1 text-foreground/90">Server Marker Clusters</span>
+              <span className="num text-primary font-bold">{clusters.length} Küme</span>
             </li>
             <li className="flex items-center gap-2 text-[12px]">
               <StatusDot tone="online" pulse={false} />
-              <span className="flex-1 text-foreground/90">SignalR WebSocket</span>
-              <span className="num text-[11px] text-muted-foreground">Bağlı</span>
+              <span className="flex-1 text-foreground/90">SignalR WebSockets</span>
+              <span className="num text-muted-foreground">Bağlı</span>
             </li>
           </ul>
-          <button
-            onClick={() => setCreateModalOpen(true)}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-[13px] font-medium text-primary-foreground transition-all duration-200 hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" />
-            Yeni İhbar Oluştur
-          </button>
         </section>
 
-        <section className="glass flex min-h-0 flex-1 flex-col rounded-xl">
-          <header className="flex items-center justify-between border-b border-white/8 px-4 py-3">
+        <section className="glass flex flex-1 flex-col overflow-hidden rounded-xl p-4 animate-fade-in">
+          <div className="flex items-center justify-between">
             <h2 className="text-[13px] font-semibold">Canlı Bildirimler</h2>
-            <span className="label-xs">SignalR</span>
-          </header>
-          <div className="scroll-slim flex-1 space-y-2 overflow-y-auto p-3">
+            <Link
+              to="/reports"
+              className="flex items-center gap-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+            >
+              Tüm İhbarlar <ChevronRight className="h-3 w-3" />
+            </Link>
+          </div>
+
+          <div className="scroll-slim mt-3 flex-1 space-y-2 overflow-y-auto pr-1">
+            {notes.length === 0 && (
+              <div className="py-8 text-center text-[12px] text-muted-foreground">
+                Canlı SignalR websocket bildirimi bekleniyor...
+              </div>
+            )}
             {notes.map((n) => (
               <article
                 key={n.id}
@@ -294,21 +342,19 @@ function CommandCenter() {
               return (
                 <button
                   key={l.key}
-                  onClick={() => setActive((a) => ({ ...a, [l.key]: !a[l.key] }))}
+                  onClick={() => handleToggle(l.key)}
                   className={cn(
-                    "flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-[11px] transition-all duration-200",
+                    "flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-all duration-200",
                     on
-                      ? "border-foreground/20 bg-foreground/8 text-foreground"
-                      : "border-transparent text-muted-foreground hover:bg-foreground/5"
+                      ? "bg-foreground/10 text-foreground shadow-sm"
+                      : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
                   )}
                 >
-                  <span
-                    className={cn(
-                      "h-1.5 w-1.5 rounded-full",
-                      on ? "bg-emerald-500" : "bg-muted-foreground/40"
-                    )}
-                  />
-                  {l.label}
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: l.color }} />
+                    {l.label}
+                  </span>
+                  <span className={cn("h-1.5 w-1.5 rounded-full", on ? "bg-primary" : "bg-border")} />
                 </button>
               );
             })}
@@ -316,7 +362,7 @@ function CommandCenter() {
         </section>
       </div>
 
-      <div className="absolute bottom-6 left-[392px] right-[332px] z-30">
+      <div className="absolute bottom-6 left-[392px] right-[332px] z-30 flex flex-col gap-2">
         <div className="glass flex items-center gap-4 rounded-xl px-4 py-3">
           <div className="flex items-center gap-1">
             <button
@@ -380,56 +426,29 @@ function CommandCenter() {
               <X className="h-4 w-4" />
             </button>
           </div>
-          <p className="mt-3 text-[12px] leading-relaxed text-muted-foreground">
-            {selectedEvent.summary}
-          </p>
-          <Link
-            to="/event/$id"
-            params={{ id: selectedEvent.id }}
-            className="mt-4 flex items-center justify-center gap-1.5 rounded-lg border border-white/12 bg-foreground/5 py-2 text-[13px] font-medium transition-colors duration-200 hover:bg-foreground/10"
-          >
-            Detayları Aç <ChevronRight className="h-3.5 w-3.5" />
-          </Link>
+
+          <div className="mt-4 grid grid-cols-2 gap-3 border-t border-white/8 pt-3 text-[12px]">
+            <div>
+              <span className="text-muted-foreground">Etki Şiddeti</span>
+              <p className="num mt-0.5 font-semibold text-primary">{selectedEvent.metric} {selectedEvent.metricLabel}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Veri Kaynağı</span>
+              <p className="mt-0.5 font-semibold">{selectedEvent.source}</p>
+            </div>
+          </div>
         </div>
       )}
 
-      <CreateReportModal
-        open={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
-        onSuccess={() => {
-          refetchEvents();
-          refetchSummary();
-        }}
-      />
-    </div>
-  );
-}
+      <button
+        onClick={() => setCreateModalOpen(true)}
+        title="Hızlı İhbar Oluştur"
+        className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-2xl transition-transform duration-200 hover:scale-110 active:scale-95"
+      >
+        <Plus className="h-6 w-6" />
+      </button>
 
-function Segmented({
-  options,
-  value,
-  onChange,
-}: {
-  options: string[];
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div className="hidden items-center gap-0.5 rounded-lg border border-white/10 p-0.5 lg:flex">
-      {options.map((o) => (
-        <button
-          key={o}
-          onClick={() => onChange(o)}
-          className={cn(
-            "rounded-md px-2.5 py-1 text-[11px] transition-colors duration-200",
-            value === o
-              ? "bg-foreground/10 text-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          {o}
-        </button>
-      ))}
+      <CreateReportModal open={createModalOpen} onClose={() => setCreateModalOpen(false)} />
     </div>
   );
 }

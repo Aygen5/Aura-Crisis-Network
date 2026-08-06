@@ -8,6 +8,7 @@ export { riskService } from "@/services/risk.service";
 export { analyticsService } from "@/services/analytics.service";
 export { notificationsService } from "@/services/notifications.service";
 export { riskZonesService } from "@/services/risk-zones.service";
+export { gisTilesService } from "@/services/gis-tiles.service";
 
 import { authService } from "@/services/auth.service";
 import { eventsService } from "@/services/events.service";
@@ -16,6 +17,7 @@ import { riskService } from "@/services/risk.service";
 import { analyticsService } from "@/services/analytics.service";
 import { notificationsService } from "@/services/notifications.service";
 import { riskZonesService } from "@/services/risk-zones.service";
+import { gisTilesService } from "@/services/gis-tiles.service";
 
 export const loginUser = (email: string, pass: string) => authService.login({ email, password: pass });
 export const registerUser = (email: string, pass: string, name: string, role = "Citizen") => authService.register({ email, password: pass, fullName: name, role });
@@ -40,3 +42,6 @@ export const markNotificationRead = (id: string) => notificationsService.markAsR
 export const createRiskZone = (req: any) => riskZonesService.createRiskZone(req);
 export const fetchIntersectingRiskZones = (lat: number, lng: number) => riskZonesService.getIntersectingZones(lat, lng);
 export const fetchBufferAnalysis = (lat: number, lng: number, radius = 5000) => riskZonesService.getBufferAnalysis(lat, lng, radius);
+
+export const fetchClusteredMarkers = (params: any) => gisTilesService.getClusteredMarkers(params);
+export const getVectorTileUrl = (z: number, x: number, y: number) => gisTilesService.getVectorTileUrl(z, x, y);

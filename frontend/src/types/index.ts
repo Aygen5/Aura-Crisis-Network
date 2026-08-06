@@ -5,3 +5,4 @@ export * from "./report.types";
 export * from "./risk.types";
 export * from "./analytics.types";
 export * from "./notification.types";
+export * from "./gis-tile.types";
