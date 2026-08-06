@@ -30,6 +30,10 @@ export const QUERY_KEYS = {
   notifications: {
     all: ["notifications"] as const,
   },
+  auditLogs: {
+    all: ["auditLogs"] as const,
+    paged: (params: any) => ["auditLogs", params] as const,
+  },
 } as const;
 
 export const QUERY_CACHE_TTL = {
@@ -39,4 +43,5 @@ export const QUERY_CACHE_TTL = {
   RISK_ZONES: 1800000,
   GIS_CLUSTERS: 30000,
   REPORTS: 60000,
+  AUDIT_LOGS: 30000,
 } as const;

@@ -11,6 +11,7 @@ export { notificationsService } from "@/services/notifications.service";
 export { riskZonesService } from "@/services/risk-zones.service";
 export { gisTilesService } from "@/services/gis-tiles.service";
 export { emergencyUnitsService } from "@/services/emergency-units.service";
+export { auditLogsService } from "@/services/audit-logs.service";
 
 import { authService } from "@/services/auth.service";
 import { eventsService } from "@/services/events.service";
@@ -20,6 +21,7 @@ import { analyticsService } from "@/services/analytics.service";
 import { notificationsService } from "@/services/notifications.service";
 import { riskZonesService } from "@/services/risk-zones.service";
 import { emergencyUnitsService } from "@/services/emergency-units.service";
+import { auditLogsService } from "@/services/audit-logs.service";
 
 export const loginUser = (email: string, pass: string) => authService.login({ email, password: pass });
 export const registerUser = (email: string, pass: string, name: string, role = "Citizen") => authService.register({ email, password: pass, fullName: name, role });
@@ -48,3 +50,5 @@ export const fetchBufferAnalysis = (lat: number, lng: number, radius = 5000) => 
 export const fetchEmergencyUnits = () => emergencyUnitsService.getAllUnits();
 export const fetchNearestEmergencyUnits = (lat: number, lng: number, count = 5, typeFilter?: any) => emergencyUnitsService.getNearestUnits(lat, lng, count, typeFilter);
 export const dispatchEmergencyUnit = (id: string, eventId: string) => emergencyUnitsService.dispatchUnit(id, eventId);
+
+export const fetchAuditLogs = (params: any) => auditLogsService.getAuditLogs(params);

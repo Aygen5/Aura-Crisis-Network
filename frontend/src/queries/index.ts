@@ -6,3 +6,4 @@ export * from "./useNotificationsQuery";
 export * from "./useRiskZonesQuery";
 export * from "./useGisTilesQuery";
 export * from "./useEmergencyUnitsQuery";
+export * from "./useAuditLogsQuery";

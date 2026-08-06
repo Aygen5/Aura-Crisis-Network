@@ -64,6 +64,16 @@ export const NAVIGATION_CONFIG: NavItem[] = [
     showInHeader: true,
   },
   {
+    id: "audit-logs",
+    title: "Denetim İzi",
+    route: "/audit-logs",
+    icon: "ShieldCheck",
+    requiredRoles: ["Admin"],
+    showInSidebar: true,
+    showInMobile: true,
+    showInHeader: true,
+  },
+  {
     id: "settings",
     title: "Ayarlar",
     route: ROUTES.SETTINGS,
