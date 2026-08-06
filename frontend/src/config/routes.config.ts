@@ -3,6 +3,7 @@ export const ROUTES = {
   REPORTS: "/reports",
   RISK: "/risk",
   ANALYTICS: "/analytics",
+  NOTIFICATIONS: "/notifications",
   SETTINGS: "/settings",
   LOGIN: "/login",
   SIGNUP: "/signup",

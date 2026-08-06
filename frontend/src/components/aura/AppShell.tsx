@@ -1,10 +1,11 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { Bell, LogOut, Search, ShieldAlert } from "lucide-react";
+import { LogOut, Search, ShieldAlert } from "lucide-react";
 import { NAVIGATION_CONFIG } from "@/config";
 import { hasAnyRole, clearStoredAuth, getStoredAuth, isAuthenticated, type AuthResponseDto } from "@/lib/api-client";
+import { NotificationPopover } from "./NotificationPopover";
 import { cn } from "@/lib/utils";
-import { AuraBadge, StatusDot } from "./primitives";
+import { StatusDot } from "./primitives";
 
 export function AuraLogo({ className }: { className?: string }) {
   return (
@@ -39,7 +40,7 @@ export function TopNav({ floating = false }: { floating?: boolean }) {
   );
 
   const userInitials = currentUser?.fullName
-    ? currentUser.fullName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+    ? currentUser.fullName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "US";
 
   return (
@@ -82,10 +83,7 @@ export function TopNav({ floating = false }: { floating?: boolean }) {
           />
         </label>
 
-        <button className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors duration-200 hover:bg-secondary hover:text-foreground">
-          <Bell className="h-4 w-4" />
-          <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-critical" />
-        </button>
+        <NotificationPopover />
 
         <div className="flex items-center gap-2 rounded-lg border border-border py-1 pl-1 pr-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-md bg-secondary text-[11px] font-semibold text-primary">

@@ -34,6 +34,16 @@ export const NAVIGATION_CONFIG: NavItem[] = [
     showInHeader: true,
   },
   {
+    id: "notifications-center",
+    title: "Bildirimler",
+    route: ROUTES.NOTIFICATIONS,
+    icon: "Bell",
+    requiredRoles: ["Citizen", "Operator", "Admin"],
+    showInSidebar: true,
+    showInMobile: true,
+    showInHeader: true,
+  },
+  {
     id: "risk-analysis",
     title: "Risk Analizi",
     route: ROUTES.RISK,

@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   startSignalRConnection,
   onEventCreated,
@@ -28,11 +29,21 @@ export function SignalRProvider({ children }: { children: ReactNode }) {
     const unsubEvent = onEventCreated((newEvent) => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+
+      toast.warning(`Yeni ${newEvent.source} Afet Uyarısı: ${newEvent.title}`, {
+        description: `${newEvent.district} · Şiddet: ${newEvent.severity}/100`,
+      });
     });
 
     const unsubReport = onReportStatusChanged((updatedReport) => {
       queryClient.invalidateQueries({ queryKey: ["reports"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+
+      toast.info(`İhbar Durumu Güncellendi: ${updatedReport.title}`, {
+        description: `${updatedReport.district} · Yeni Durum: ${updatedReport.status}`,
+      });
     });
 
     const interval = setInterval(() => {
