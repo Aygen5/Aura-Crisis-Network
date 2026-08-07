@@ -11,10 +11,11 @@ type LoginSearch = {
 };
 
 export const Route = createFileRoute("/login")({
-  validateSearch: (search: Record<string, unknown>): LoginSearch => ({
-    registered: search.registered === "true" || search.registered === true,
-    email: (search.email as string) || "",
-  }),
+  validateSearch: (search: Record<string, unknown>): LoginSearch => {
+    const registered = search.registered === "true" || search.registered === true ? true : undefined;
+    const email = search.email ? String(search.email) : undefined;
+    return { registered, email };
+  },
   head: () => ({
     meta: [
       { title: "Giriş Yap — Aura Crisis Network" },
