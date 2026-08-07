@@ -1,19 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { notificationsService } from "@/services/notifications.service";
-import { isAuthenticated } from "@/lib/api-client";
+import { isAuthenticated, getStoredAuth } from "@/lib/api-client";
 import type { NotificationDto } from "@/types";
 
 export function useUserNotifications(limit = 20) {
-  const authed = isAuthenticated();
+  const hasValidAuth = typeof window !== "undefined" && Boolean(getStoredAuth()?.accessToken) && isAuthenticated();
+
   return useQuery<NotificationDto[]>({
     queryKey: ["notifications", limit],
     queryFn: () => notificationsService.getMyNotifications(limit),
-    enabled: authed,
-    staleTime: 30000,
+    enabled: hasValidAuth,
+    staleTime: 60000,
     gcTime: 300000,
     retry: false,
     refetchOnWindowFocus: false,
-    refetchInterval: () => (isAuthenticated() ? 30000 : false),
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    refetchInterval: false,
   });
 }
 
@@ -35,10 +38,10 @@ export function useMarkNotificationRead() {
 
 export function useMarkAllNotificationsRead() {
   const queryClient = useQueryClient();
-  const { data: notifications = [] } = useUserNotifications(20);
 
   return useMutation({
     mutationFn: async () => {
+      const notifications = queryClient.getQueryData<NotificationDto[]>(["notifications", 20]) || [];
       const unreadList = notifications.filter((n) => !n.isRead);
       await Promise.all(unreadList.map((n) => notificationsService.markAsRead(n.id)));
     },
