@@ -44,6 +44,11 @@ public class CitizenReportRepository : ICitizenReportRepository
         await _context.CitizenReports.AddAsync(entity, cancellationToken);
     }
 
+    public async Task AddAttachmentAsync(ReportAttachment attachment, CancellationToken cancellationToken = default)
+    {
+        await _context.ReportAttachments.AddAsync(attachment, cancellationToken);
+    }
+
     public void Update(CitizenReport entity)
     {
         _context.CitizenReports.Update(entity);

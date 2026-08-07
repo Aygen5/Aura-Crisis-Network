@@ -1,5 +1,6 @@
 using Aura.Application.Common.Interfaces;
 using Aura.Application.DTOs;
+using Aura.Domain.Entities;
 using MediatR;
 
 namespace Aura.Application.Reports.Commands.UploadReportAttachment;
@@ -40,11 +41,9 @@ public class UploadReportAttachmentCommandHandler : IRequestHandler<UploadReport
             cancellationToken
         );
 
-        report.AddAttachment(request.FileName, fileUrl, request.ContentType, request.FileSizeBytes);
-        _citizenReportRepository.Update(report);
+        var attachment = new ReportAttachment(request.ReportId, request.FileName, fileUrl, request.ContentType, request.FileSizeBytes);
+        await _citizenReportRepository.AddAttachmentAsync(attachment, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        var attachment = report.Attachments.Last();
 
         return new ReportAttachmentDto(
             attachment.Id,

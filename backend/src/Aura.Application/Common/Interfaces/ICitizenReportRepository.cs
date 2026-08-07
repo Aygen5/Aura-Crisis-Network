@@ -10,5 +10,6 @@ public interface ICitizenReportRepository
     Task<IReadOnlyList<CitizenReport>> GetReportsByStatusAsync(ReportStatus status, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<CitizenReport>> GetNearbyReportsAsync(GeoPoint location, double radiusInMeters, CancellationToken cancellationToken = default);
     Task AddAsync(CitizenReport entity, CancellationToken cancellationToken = default);
+    Task AddAttachmentAsync(ReportAttachment attachment, CancellationToken cancellationToken = default);
     void Update(CitizenReport entity);
 }
