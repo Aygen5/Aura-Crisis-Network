@@ -84,10 +84,16 @@ export async function httpClient<T>(endpoint: string, options?: RequestInit): Pr
     headers["Authorization"] = `Bearer ${auth.accessToken}`;
   }
 
-  let response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
+  } catch (networkErr) {
+    throw new Error("Sunucuya bağlanılamıyor. Lütfen sunucunun çalıştığından ve internet bağlantınızdan emin olunuz.");
+  }
 
   const isAuthEndpoint = endpoint.startsWith("/auth/");
 
@@ -104,10 +110,14 @@ export async function httpClient<T>(endpoint: string, options?: RequestInit): Pr
 
     if (refreshedAuth?.accessToken) {
       headers["Authorization"] = `Bearer ${refreshedAuth.accessToken}`;
-      response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
-        ...options,
-        headers,
-      });
+      try {
+        response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
+          ...options,
+          headers,
+        });
+      } catch {
+        throw new Error("Sunucuya bağlanılamıyor. Lütfen tekrar deneyiniz.");
+      }
     } else {
       clearStoredAuth();
       if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
@@ -119,8 +129,34 @@ export async function httpClient<T>(endpoint: string, options?: RequestInit): Pr
 
   if (!response.ok) {
     const errData = await response.json().catch(() => null);
-    const msg = errData?.errors?.[0] || errData?.Message || `API Error: ${response.status} ${response.statusText}`;
-    throw new Error(msg);
+
+    if (response.status === 401) {
+      const serverMsg = errData?.Message || errData?.errors?.[0];
+      throw new Error(serverMsg || "E-posta veya şifre hatalı.");
+    }
+
+    if (response.status === 403) {
+      throw new Error("Bu işlem için yetkiniz bulunmamaktadır.");
+    }
+
+    if (response.status === 404) {
+      throw new Error("Sunucu kaynağı veya istenen uç nokta bulunamadı.");
+    }
+
+    if (response.status === 422 || response.status === 400) {
+      if (errData?.errors && Array.isArray(errData.errors)) {
+        throw new Error(errData.errors.join(" "));
+      }
+      const msg = errData?.Message || errData?.title || "Girilen veriler doğrulanamadı. Lütfen alanları kontrol ediniz.";
+      throw new Error(msg);
+    }
+
+    if (response.status >= 500) {
+      throw new Error("Sunucuda beklenmeyen bir kriz hatası oluştu. Lütfen sistem yöneticisi ile iletişime geçiniz.");
+    }
+
+    const defaultMsg = errData?.errors?.[0] || errData?.Message || `İşlem başarısız: HTTP ${response.status}`;
+    throw new Error(defaultMsg);
   }
 
   if (response.status === 204) {
