@@ -125,6 +125,7 @@ function CommandCenter() {
   const [win, setWin] = useState("24 Hours");
   const [speed, setSpeed] = useState("1x");
   const [notes, setNotes] = useState<NotificationItem[]>([]);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(10);
 
   const { data: events = [] } = useActiveEvents();
