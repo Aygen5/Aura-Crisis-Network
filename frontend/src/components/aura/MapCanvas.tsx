@@ -3,7 +3,7 @@ import { DisasterIcon } from "./DisasterIcon";
 import { disasterMeta, type EventDto, type RiskZoneDto, type MarkerClusterDto, type EmergencyUnitDto } from "@/lib/api-client";
 import { TURKEY_PATHS, NEIGHBOR_PATHS, CITIES, SEA_LABELS } from "@/lib/geo-turkey";
 import { cn } from "@/lib/utils";
-import { Truck, Shield, Ambulance, Flame } from "lucide-react";
+import { Truck, Shield, Ambulance, Flame, Plus, Minus } from "lucide-react";
 
 type Props = {
   events: EventDto[];
@@ -14,6 +14,8 @@ type Props = {
   selectedId?: string | null;
   selectedUnitId?: string | null;
   bufferPoint?: { lat: number; lng: number; radiusMeters: number } | null;
+  zoomLevel?: number;
+  onZoomChange?: (zoom: number) => void;
   onSelect?: (e: EventDto) => void;
   onClusterSelect?: (cluster: MarkerClusterDto) => void;
   onUnitSelect?: (unit: EmergencyUnitDto) => void;
@@ -344,6 +346,8 @@ export const MapCanvas = memo(function MapCanvas({
   selectedId,
   selectedUnitId,
   bufferPoint,
+  zoomLevel = 10,
+  onZoomChange,
   onSelect,
   onClusterSelect,
   onUnitSelect,
@@ -361,6 +365,24 @@ export const MapCanvas = memo(function MapCanvas({
         events={events}
         onMapClick={onMapClick}
       />
+
+      <div className="absolute right-4 top-4 z-40 flex flex-col gap-1 rounded-lg border border-border bg-card/90 p-1 shadow-lg backdrop-blur-md">
+        <button
+          onClick={() => onZoomChange?.(Math.min(18, zoomLevel + 1))}
+          className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground pointer-events-auto"
+          title="Yakınlaş (Zoom In)"
+        >
+          <Plus className="h-4 w-4" />
+        </button>
+        <div className="h-px bg-border" />
+        <button
+          onClick={() => onZoomChange?.(Math.max(4, zoomLevel - 1))}
+          className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground pointer-events-auto"
+          title="Uzaklaş (Zoom Out)"
+        >
+          <Minus className="h-4 w-4" />
+        </button>
+      </div>
 
       <div className="absolute inset-0 pointer-events-none">
         {clusters.length > 0
@@ -470,6 +492,7 @@ export const MapCanvas = memo(function MapCanvas({
   prev.units === next.units &&
   prev.active === next.active &&
   prev.className === next.className &&
+  prev.zoomLevel === next.zoomLevel &&
   prev.bufferPoint?.lat === next.bufferPoint?.lat &&
   prev.bufferPoint?.lng === next.bufferPoint?.lng
 ));
