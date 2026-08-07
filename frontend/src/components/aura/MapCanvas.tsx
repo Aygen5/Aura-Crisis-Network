@@ -264,7 +264,33 @@ export const BaseMap = memo(function BaseMap({
   );
 });
 
-const VehicleMarker = memo(function VehicleMarker({
+function getUnitIcon(type: string) {
+  switch (type) {
+    case "Ambulance":
+      return <Ambulance className="h-3.5 w-3.5" />;
+    case "FireEngine":
+      return <Flame className="h-3.5 w-3.5" />;
+    case "PolicePatrol":
+      return <Shield className="h-3.5 w-3.5" />;
+    default:
+      return <Truck className="h-3.5 w-3.5" />;
+  }
+}
+
+function getStatusColor(status: string) {
+  switch (status) {
+    case "Dispatched":
+      return "bg-amber-500 border-amber-300 text-amber-950 animate-pulse";
+    case "OnScene":
+      return "bg-red-500 border-red-300 text-red-950 animate-pulse";
+    case "Maintenance":
+      return "bg-zinc-600 border-zinc-400 text-zinc-100";
+    default:
+      return "bg-emerald-500 border-emerald-300 text-emerald-950";
+  }
+}
+
+export const VehicleMarker = memo(function VehicleMarker({
   unit,
   selected,
   onSelect,
@@ -273,40 +299,14 @@ const VehicleMarker = memo(function VehicleMarker({
   selected: boolean;
   onSelect?: (unit: EmergencyUnitDto) => void;
 }) {
-  const getUnitIcon = useCallback((type: string) => {
-    switch (type) {
-      case "Ambulance":
-        return <Ambulance className="h-3.5 w-3.5" />;
-      case "FireEngine":
-        return <Flame className="h-3.5 w-3.5" />;
-      case "PolicePatrol":
-        return <Shield className="h-3.5 w-3.5" />;
-      default:
-        return <Truck className="h-3.5 w-3.5" />;
-    }
-  }, []);
-
-  const getStatusColor = useCallback((status: string) => {
-    switch (status) {
-      case "Dispatched":
-        return "bg-amber-500 border-amber-300 text-amber-950 animate-pulse";
-      case "OnScene":
-        return "bg-red-500 border-red-300 text-red-950 animate-pulse";
-      case "Maintenance":
-        return "bg-zinc-600 border-zinc-400 text-zinc-100";
-      default:
-        return "bg-emerald-500 border-emerald-300 text-emerald-950";
-    }
-  }, []);
-
   const handleClick = useCallback(() => {
     onSelect?.(unit);
   }, [unit, onSelect]);
 
   const leftPos = useMemo(() => `${Math.max(4, Math.min(96, ((unit.longitude - 26.0) / 19.0) * 100))}%`, [unit.longitude]);
   const topPos = useMemo(() => `${Math.max(4, Math.min(96, ((42.0 - unit.latitude) / 6.0) * 100))}%`, [unit.latitude]);
-  const statusStyle = useMemo(() => getStatusColor(unit.status), [unit.status, getStatusColor]);
-  const icon = useMemo(() => getUnitIcon(unit.type), [unit.type, getUnitIcon]);
+  const statusStyle = useMemo(() => getStatusColor(unit.status), [unit.status]);
+  const icon = useMemo(() => getUnitIcon(unit.type), [unit.type]);
 
   return (
     <button
@@ -337,6 +337,110 @@ const VehicleMarker = memo(function VehicleMarker({
   prev.unit.headingDegrees === next.unit.headingDegrees
 ));
 
+const DisasterMarker = memo(function DisasterMarker({
+  event,
+  selected,
+  onSelect,
+}: {
+  event: EventDto;
+  selected: boolean;
+  onSelect?: (e: EventDto) => void;
+}) {
+  const meta = disasterMeta[event.type] ?? disasterMeta.Earthquake;
+  const left = `${Math.max(4, Math.min(96, ((event.longitude - 26.0) / 19.0) * 100))}%`;
+  const top = `${Math.max(4, Math.min(96, ((42.0 - event.latitude) / 6.0) * 100))}%`;
+
+  return (
+    <button
+      onClick={() => onSelect?.(event)}
+      style={{ left, top }}
+      className={cn(
+        "pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300",
+        selected ? "z-30 scale-125" : "z-20 hover:scale-110"
+      )}
+    >
+      <span
+        className="flex h-8 w-8 items-center justify-center rounded-lg border border-current/30 bg-card/90 shadow-lg backdrop-blur-md"
+        style={{ color: meta.color }}
+      >
+        <span className="h-4 w-4">
+          <DisasterIcon type={event.type} />
+        </span>
+      </span>
+    </button>
+  );
+}, (prev, next) => (
+  prev.selected === next.selected &&
+  prev.event.id === next.event.id &&
+  prev.event.latitude === next.event.latitude &&
+  prev.event.longitude === next.event.longitude &&
+  prev.event.severity === next.event.severity
+));
+
+const ClusterMarker = memo(function ClusterMarker({
+  cluster,
+  onClusterSelect,
+}: {
+  cluster: MarkerClusterDto;
+  onClusterSelect?: (cluster: MarkerClusterDto) => void;
+}) {
+  if (cluster.pointCount === 1) {
+    const meta = disasterMeta[cluster.primaryDisasterType] || disasterMeta.Earthquake;
+    return (
+      <button
+        onClick={() => onClusterSelect?.(cluster)}
+        style={{
+          left: `${Math.max(4, Math.min(96, ((cluster.longitude - 26.0) / 19.0) * 100))}%`,
+          top: `${Math.max(4, Math.min(96, ((42.0 - cluster.latitude) / 6.0) * 100))}%`,
+        }}
+        className="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300 hover:scale-125 z-30"
+      >
+        <span
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-current/30 bg-card/90 shadow-lg backdrop-blur-md"
+          style={{ color: meta.color }}
+        >
+          <span className="h-4 w-4">
+            <DisasterIcon type={cluster.primaryDisasterType} />
+          </span>
+        </span>
+      </button>
+    );
+  }
+
+  const toneColor =
+    cluster.maxSeverity >= 80
+      ? "bg-red-600 border-red-400 shadow-red-500/60 shadow-lg animate-pulse ring-4 ring-red-500/20"
+      : cluster.maxSeverity >= 50
+        ? "bg-red-500/90 border-red-400 shadow-red-500/40 shadow-md"
+        : "bg-red-500/80 border-red-500/90 shadow-red-500/30 shadow-md";
+
+  return (
+    <button
+      onClick={() => onClusterSelect?.(cluster)}
+      style={{
+        left: `${Math.max(4, Math.min(96, ((cluster.longitude - 26.0) / 19.0) * 100))}%`,
+        top: `${Math.max(4, Math.min(96, ((42.0 - cluster.latitude) / 6.0) * 100))}%`,
+      }}
+      className="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300 hover:scale-125 z-30"
+    >
+      <span
+        className={cn(
+          "flex h-9 w-9 items-center justify-center rounded-full border-2 text-[12px] font-bold text-white shadow-xl backdrop-blur-md",
+          toneColor
+        )}
+      >
+        {cluster.pointCount}
+      </span>
+    </button>
+  );
+}, (prev, next) => (
+  prev.cluster.clusterId === next.cluster.clusterId &&
+  prev.cluster.pointCount === next.cluster.pointCount &&
+  prev.cluster.latitude === next.cluster.latitude &&
+  prev.cluster.longitude === next.cluster.longitude &&
+  prev.cluster.maxSeverity === next.cluster.maxSeverity
+));
+
 export const MapCanvas = memo(function MapCanvas({
   events,
   clusters = [],
@@ -353,16 +457,16 @@ export const MapCanvas = memo(function MapCanvas({
   onUnitSelect,
   onMapClick,
   className,
+  compact = false,
 }: Props) {
   return (
-    <div className={cn("relative overflow-hidden rounded-xl border border-border", className)}>
+    <div className={cn("relative overflow-hidden rounded-xl border border-border bg-card shadow-2xl", className)}>
       <BaseMap
-        heatmap={active?.heatmap}
-        risk={active?.risk}
-        traffic={active?.traffic}
         riskZones={riskZones}
         bufferPoint={bufferPoint}
         events={events}
+        heatmap={active?.heatmap}
+        risk={active?.risk}
         onMapClick={onMapClick}
       />
 
@@ -384,94 +488,23 @@ export const MapCanvas = memo(function MapCanvas({
         </button>
       </div>
 
-      <div className="absolute inset-0 pointer-events-none">
+      <div className="pointer-events-none absolute inset-0">
         {clusters.length > 0
-          ? clusters.map((c) => {
-              if (c.pointCount === 1) {
-                const meta = disasterMeta[c.primaryDisasterType] ?? disasterMeta.Earthquake;
-                const selected = selectedId === c.clusterId;
-
-                return (
-                  <button
-                    key={c.clusterId}
-                    onClick={() => onClusterSelect?.(c)}
-                    style={{
-                      left: `${Math.max(4, Math.min(96, ((c.longitude - 26.0) / 19.0) * 100))}%`,
-                      top: `${Math.max(4, Math.min(96, ((42.0 - c.latitude) / 6.0) * 100))}%`,
-                    }}
-                    className={cn(
-                      "pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300 z-20 hover:scale-110",
-                      selected ? "z-30 scale-125" : ""
-                    )}
-                  >
-                    <span
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-current/30 bg-card/90 shadow-lg backdrop-blur-md"
-                      style={{ color: meta.color }}
-                    >
-                      <span className="h-4 w-4">
-                        <DisasterIcon type={c.primaryDisasterType} />
-                      </span>
-                    </span>
-                  </button>
-                );
-              }
-
-              const toneColor =
-                c.maxSeverity >= 80
-                  ? "bg-red-600 border-red-400 shadow-red-500/60 shadow-lg animate-pulse ring-4 ring-red-500/20"
-                  : c.maxSeverity >= 50
-                    ? "bg-red-500/90 border-red-400 shadow-red-500/40 shadow-md"
-                    : "bg-red-500/80 border-red-500/90 shadow-red-500/30 shadow-md";
-
-              return (
-                <button
-                  key={c.clusterId}
-                  onClick={() => onClusterSelect?.(c)}
-                  style={{
-                    left: `${Math.max(4, Math.min(96, ((c.longitude - 26.0) / 19.0) * 100))}%`,
-                    top: `${Math.max(4, Math.min(96, ((42.0 - c.latitude) / 6.0) * 100))}%`,
-                  }}
-                  className="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300 hover:scale-125 z-30"
-                >
-                  <span
-                    className={cn(
-                      "flex h-9 w-9 items-center justify-center rounded-full border-2 text-[12px] font-bold text-white shadow-xl backdrop-blur-md",
-                      toneColor
-                    )}
-                  >
-                    {c.pointCount}
-                  </span>
-                </button>
-              );
-            })
-          : events.map((e) => {
-              const meta = disasterMeta[e.type] ?? disasterMeta.Earthquake;
-              const selected = selectedId === e.id;
-
-              return (
-                <button
-                  key={e.id}
-                  onClick={() => onSelect?.(e)}
-                  style={{
-                    left: `${Math.max(4, Math.min(96, ((e.longitude - 26.0) / 19.0) * 100))}%`,
-                    top: `${Math.max(4, Math.min(96, ((42.0 - e.latitude) / 6.0) * 100))}%`,
-                  }}
-                  className={cn(
-                    "pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300",
-                    selected ? "z-30 scale-125" : "z-20 hover:scale-110"
-                  )}
-                >
-                  <span
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-current/30 bg-card/90 shadow-lg backdrop-blur-md"
-                    style={{ color: meta.color }}
-                  >
-                    <span className="h-4 w-4">
-                      <DisasterIcon type={e.type} />
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
+          ? clusters.map((c) => (
+              <ClusterMarker
+                key={c.clusterId}
+                cluster={c}
+                onClusterSelect={onClusterSelect}
+              />
+            ))
+          : events.map((e) => (
+              <DisasterMarker
+                key={e.id}
+                event={e}
+                selected={selectedId === e.id}
+                onSelect={onSelect}
+              />
+            ))}
 
         {units.map((u) => (
           <VehicleMarker

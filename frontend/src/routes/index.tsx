@@ -182,25 +182,37 @@ function CommandCenter() {
   const availableUnitsCount = units.filter((u) => u.status === "Available").length;
   const dispatchedUnitsCount = units.filter((u) => u.status === "Dispatched" || u.status === "OnScene").length;
 
-  function handleToggle(key: string) {
+  const handleToggle = useCallback((key: string) => {
     setActive((prev) => ({ ...prev, [key]: !prev[key] }));
-  }
+  }, []);
 
-  function handleMapClick(point: { lat: number; lng: number }) {
+  const handleMapClick = useCallback((point: { lat: number; lng: number }) => {
     setClickPoint(point);
-  }
+  }, []);
 
-  function handleClusterSelect(c: any) {
+  const handleClusterSelect = useCallback((c: any) => {
     setZoomLevel((z) => Math.min(18, z + 3));
     setClickPoint({ lat: c.latitude, lng: c.longitude });
-  }
+  }, []);
+
+  const handleSelectEvent = useCallback((e: EventDto) => {
+    setSelected(e.id);
+  }, []);
+
+  const handleSelectUnit = useCallback((u: EmergencyUnitDto) => {
+    setSelectedUnit(u);
+  }, []);
 
   const searchParams = Route.useSearch();
-  const searchBufferPoint = clickPoint
-    ? { lat: clickPoint.lat, lng: clickPoint.lng, radiusMeters: 3000 }
-    : searchParams.lat && searchParams.lng
-      ? { lat: searchParams.lat, lng: searchParams.lng, radiusMeters: 5000 }
-      : null;
+  const searchBufferPoint = useMemo(() => {
+    if (clickPoint) {
+      return { lat: clickPoint.lat, lng: clickPoint.lng, radiusMeters: 3000 };
+    }
+    if (searchParams.lat && searchParams.lng) {
+      return { lat: searchParams.lat, lng: searchParams.lng, radiusMeters: 5000 };
+    }
+    return null;
+  }, [clickPoint, searchParams.lat, searchParams.lng]);
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-background">
@@ -214,9 +226,9 @@ function CommandCenter() {
         bufferPoint={searchBufferPoint}
         zoomLevel={zoomLevel}
         onZoomChange={setZoomLevel}
-        onSelect={(e) => setSelected(e.id)}
+        onSelect={handleSelectEvent}
         onClusterSelect={handleClusterSelect}
-        onUnitSelect={(u) => setSelectedUnit(u)}
+        onUnitSelect={handleSelectUnit}
         onMapClick={handleMapClick}
         className="absolute inset-0 h-full w-full border-none rounded-none"
       />
