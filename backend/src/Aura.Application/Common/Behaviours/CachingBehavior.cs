@@ -34,23 +34,10 @@ public class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
         }
 
         var cacheKey = cacheableRequest.CacheKey;
-        var cachedData = await _cache.GetAsync(cacheKey, cancellationToken);
-        if (cachedData != null && cachedData.Length > 0)
-        {
-            var json = Encoding.UTF8.GetString(cachedData);
-            var deserialized = JsonSerializer.Deserialize<TResponse>(json, JsonOptions);
-            if (deserialized != null)
-            {
-                return deserialized;
-            }
-        }
-
-        var keyLock = KeyLocks.GetOrAdd(cacheKey, _ => new SemaphoreSlim(1, 1));
-        await keyLock.WaitAsync(cancellationToken);
 
         try
         {
-            cachedData = await _cache.GetAsync(cacheKey, cancellationToken);
+            var cachedData = await _cache.GetAsync(cacheKey, cancellationToken);
             if (cachedData != null && cachedData.Length > 0)
             {
                 var json = Encoding.UTF8.GetString(cachedData);
@@ -60,10 +47,16 @@ public class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
                     return deserialized;
                 }
             }
+        }
+        catch
+        {
+        }
 
-            var response = await next();
+        var response = await next();
 
-            if (response != null)
+        if (response != null)
+        {
+            try
             {
                 var responseJson = JsonSerializer.Serialize(response, JsonOptions);
                 var responseBytes = Encoding.UTF8.GetBytes(responseJson);
@@ -74,12 +67,11 @@ public class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
 
                 await _cache.SetAsync(cacheKey, responseBytes, options, cancellationToken);
             }
+            catch
+            {
+            }
+        }
 
-            return response;
-        }
-        finally
-        {
-            keyLock.Release();
-        }
+        return response;
     }
 }

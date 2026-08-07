@@ -335,7 +335,7 @@ const VehicleMarker = memo(function VehicleMarker({
   prev.unit.headingDegrees === next.unit.headingDegrees
 ));
 
-export function MapCanvas({
+export const MapCanvas = memo(function MapCanvas({
   events,
   clusters = [],
   units = [],
@@ -433,4 +433,14 @@ export function MapCanvas({
       </div>
     </div>
   );
-}
+}, (prev, next) => (
+  prev.selectedId === next.selectedId &&
+  prev.selectedUnitId === next.selectedUnitId &&
+  prev.events === next.events &&
+  prev.clusters === next.clusters &&
+  prev.units === next.units &&
+  prev.active === next.active &&
+  prev.className === next.className &&
+  prev.bufferPoint?.lat === next.bufferPoint?.lat &&
+  prev.bufferPoint?.lng === next.bufferPoint?.lng
+));

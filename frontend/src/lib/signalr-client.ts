@@ -1,8 +1,10 @@
 import * as signalR from "@microsoft/signalr";
+import { API_CONFIG } from "@/config/api.config";
 import type { CitizenReportDto, EventDto, EmergencyUnitDto } from "./api-client";
 
-const CRISIS_HUB_URL = "http://localhost:5000/hubs/crisis";
-const VEHICLES_HUB_URL = "http://localhost:5000/hubs/vehicles";
+const BASE_SERVER_URL = API_CONFIG.BASE_URL.replace(/\/api\/v1\/?$/, "");
+const CRISIS_HUB_URL = `${BASE_SERVER_URL}/hubs/crisis`;
+const VEHICLES_HUB_URL = `${BASE_SERVER_URL}/hubs/vehicles`;
 
 let crisisConnection: signalR.HubConnection | null = null;
 let vehiclesConnection: signalR.HubConnection | null = null;
