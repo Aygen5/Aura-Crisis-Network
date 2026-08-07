@@ -1,12 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { notificationsService } from "@/services/notifications.service";
+import { isAuthenticated } from "@/lib/api-client";
 import type { NotificationDto } from "@/types";
 
 export function useUserNotifications(limit = 20) {
   return useQuery<NotificationDto[]>({
     queryKey: ["notifications", limit],
     queryFn: () => notificationsService.getMyNotifications(limit),
-    refetchInterval: 30000,
+    enabled: isAuthenticated(),
+    staleTime: 30000,
+    retry: (failureCount, error: any) => {
+      const msg = error?.message || "";
+      if (msg.includes("401") || msg.includes("yetkiniz") || !isAuthenticated()) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+    refetchInterval: () => {
+      if (!isAuthenticated()) return false;
+      return 30000;
+    },
   });
 }
 

@@ -77,18 +77,18 @@ public class GisTileRepository : IGisTileRepository
 
         const string sql = @"
             SELECT 
-                CAST(FLOOR(""Latitude"" / @gridStep) * @gridStep AS text) || '_' || CAST(FLOOR(""Longitude"" / @gridStep) * @gridStep AS text) AS ClusterId,
+                CAST(FLOOR(ST_Y(""Location"") / @gridStep) * @gridStep AS text) || '_' || CAST(FLOOR(ST_X(""Location"") / @gridStep) * @gridStep AS text) AS ClusterId,
                 COUNT(*) AS PointCount,
-                AVG(""Latitude"") AS Latitude,
-                AVG(""Longitude"") AS Longitude,
+                AVG(ST_Y(""Location"")) AS Latitude,
+                AVG(ST_X(""Location"")) AS Longitude,
                 MAX(""Severity"") AS MaxSeverity,
                 MODE() WITHIN GROUP (ORDER BY ""Type"") AS PrimaryDisasterType,
                 (COUNT(*) > 1) AS IsCluster
-            FROM ""CitizenReports""
+            FROM ""Events""
             WHERE ""IsDeleted"" = false
-              AND ""Latitude"" BETWEEN @minLat AND @maxLat
-              AND ""Longitude"" BETWEEN @minLng AND @maxLng
-            GROUP BY FLOOR(""Latitude"" / @gridStep), FLOOR(""Longitude"" / @gridStep);";
+              AND ST_Y(""Location"") BETWEEN @minLat AND @maxLat
+              AND ST_X(""Location"") BETWEEN @minLng AND @maxLng
+            GROUP BY FLOOR(ST_Y(""Location"") / @gridStep), FLOOR(ST_X(""Location"") / @gridStep);";
 
         var clusters = new List<MarkerClusterDto>();
 
@@ -108,14 +108,22 @@ public class GisTileRepository : IGisTileRepository
         using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
+            var clusterId = reader.IsDBNull(0) ? string.Empty : reader.GetString(0);
+            var pointCount = reader.IsDBNull(1) ? 0 : Convert.ToInt32(reader.GetValue(1));
+            var lat = reader.IsDBNull(2) ? 0.0 : Convert.ToDouble(reader.GetValue(2));
+            var lng = reader.IsDBNull(3) ? 0.0 : Convert.ToDouble(reader.GetValue(3));
+            var maxSeverity = reader.IsDBNull(4) ? 1 : Convert.ToInt32(reader.GetValue(4));
+            var primaryType = reader.IsDBNull(5) ? "Earthquake" : reader.GetValue(5).ToString() ?? "Earthquake";
+            var isCluster = !reader.IsDBNull(6) && Convert.ToBoolean(reader.GetValue(6));
+
             clusters.Add(new MarkerClusterDto(
-                ClusterId: reader.GetString(0),
-                PointCount: reader.GetInt32(1),
-                Latitude: reader.GetDouble(2),
-                Longitude: reader.GetDouble(3),
-                MaxSeverity: reader.GetInt32(4),
-                PrimaryDisasterType: reader.GetString(5),
-                IsCluster: reader.GetBoolean(6)
+                ClusterId: clusterId,
+                PointCount: pointCount,
+                Latitude: lat,
+                Longitude: lng,
+                MaxSeverity: maxSeverity,
+                PrimaryDisasterType: primaryType,
+                IsCluster: isCluster
             ));
         }
 
