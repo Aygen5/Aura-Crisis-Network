@@ -103,6 +103,19 @@ export const BaseMap = memo(function BaseMap({
     onMapClick?.({ lat, lng });
   }, [onMapClick]);
 
+  const mapTransform = useMemo(() => {
+    if (!bufferPoint) return {};
+    const targetX = (bufferPoint.lng - 26.0) * (1000.0 / 19.0);
+    const targetY = (42.0 - bufferPoint.lat) * (600.0 / 6.0);
+    const dx = 500 - targetX;
+    const dy = 300 - targetY;
+    return {
+      transform: `translate(${dx}px, ${dy}px) scale(1.4)`,
+      transformOrigin: `${targetX}px ${targetY}px`,
+      transition: "transform 0.85s cubic-bezier(0.16, 1, 0.3, 1)"
+    };
+  }, [bufferPoint]);
+
   return (
     <div
       className="absolute inset-0 overflow-hidden"
@@ -145,120 +158,122 @@ export const BaseMap = memo(function BaseMap({
         <rect width="1000" height="600" fill="oklch(0.168 0.014 244)" />
         <rect width="1000" height="600" fill="url(#graticule)" />
 
-        <g fill="oklch(0.222 0 0)" stroke="oklch(0.36 0.02 244)" strokeWidth="0.8">
-          {NEIGHBOR_PATHS.map((d, i) => (
-            <path key={i} d={d} />
-          ))}
-        </g>
+        <g style={mapTransform}>
+          <g fill="oklch(0.222 0 0)" stroke="oklch(0.36 0.02 244)" strokeWidth="0.8">
+            {NEIGHBOR_PATHS.map((d, i) => (
+              <path key={i} d={d} />
+            ))}
+          </g>
 
-        <g filter="url(#landShadow)">
-          {TURKEY_PATHS.map((d, i) => (
-            <path
-              key={i}
-              d={d}
-              fill="oklch(0.252 0 0)"
-              stroke="oklch(0.44 0.03 244)"
-              strokeWidth="1.1"
-              strokeLinejoin="round"
-            />
-          ))}
-        </g>
-
-        {risk && (
-          <g>
-            {defaultRiskPolygons.map((z) => (
+          <g filter="url(#landShadow)">
+            {TURKEY_PATHS.map((d, i) => (
               <path
-                key={z.id}
-                d={z.path}
-                fill={z.color}
-                fillOpacity="0.15"
-                stroke={z.color}
-                strokeOpacity="0.8"
-                strokeWidth="1.5"
-                strokeDasharray="5 5"
-                className="transition-all duration-300 hover:fill-opacity-35 hover:stroke-width-2.5 cursor-pointer"
-                onMouseEnter={() => setHoveredZone(z)}
-                onMouseLeave={() => setHoveredZone(null)}
+                key={i}
+                d={d}
+                fill="oklch(0.252 0 0)"
+                stroke="oklch(0.44 0.03 244)"
+                strokeWidth="1.1"
+                strokeLinejoin="round"
               />
             ))}
           </g>
-        )}
 
-        {bufferPoint && (
-          <g>
-            <circle
-              cx={(bufferPoint.lng - 26.0) * (1000.0 / 19.0)}
-              cy={(42.0 - bufferPoint.lat) * (600.0 / 6.0)}
-              r={(bufferPoint.radiusMeters / 1000.0) * 12}
-              fill="#ef4444"
-              fillOpacity="0.15"
-              stroke="#ef4444"
-              strokeWidth="2"
-              strokeDasharray="4 4"
-              className="animate-pulse"
-            />
-            <circle
-              cx={(bufferPoint.lng - 26.0) * (1000.0 / 19.0)}
-              cy={(42.0 - bufferPoint.lat) * (600.0 / 6.0)}
-              r="4"
-              fill="#ef4444"
-            />
-          </g>
-        )}
-
-        {heatmap && (
-          <g className="mix-blend-screen transition-opacity duration-500">
-            {heatNodes.map((hn) => (
-              <circle key={hn.id} cx={hn.cx} cy={hn.cy} r={hn.r} fill={hn.gradient} />
-            ))}
-            {events.map((e) => {
-              const cx = (e.longitude - 26.0) * (1000.0 / 19.0);
-              const cy = (42.0 - e.latitude) * (600.0 / 6.0);
-              return <circle key={e.id} cx={cx} cy={cy} r="65" fill="url(#heatHigh)" />;
-            })}
-          </g>
-        )}
-
-        {labels && (
-          <g pointerEvents="none">
-            {SEA_LABELS.map((s) => (
-              <text
-                key={s.n}
-                x={s.x}
-                y={s.y}
-                textAnchor="middle"
-                fill="oklch(0.62 0.05 244)"
-                fontSize="10"
-                letterSpacing="2.4"
-                fontFamily="var(--font-sans)"
-              >
-                {s.n}
-              </text>
-            ))}
-            {CITIES.map((c) => (
-              <g key={c.n}>
-                <circle
-                  cx={c.x}
-                  cy={c.y}
-                  r={c.major ? 2.6 : 1.6}
-                  fill="oklch(0.82 0 0 / 0.65)"
-                  stroke="oklch(0.18 0 0)"
-                  strokeWidth="0.8"
+          {risk && (
+            <g>
+              {defaultRiskPolygons.map((z) => (
+                <path
+                  key={z.id}
+                  d={z.path}
+                  fill={z.color}
+                  fillOpacity="0.15"
+                  stroke={z.color}
+                  strokeOpacity="0.8"
+                  strokeWidth="1.5"
+                  strokeDasharray="5 5"
+                  className="transition-all duration-300 hover:fill-opacity-35 hover:stroke-width-2.5 cursor-pointer"
+                  onMouseEnter={() => setHoveredZone(z)}
+                  onMouseLeave={() => setHoveredZone(null)}
                 />
+              ))}
+            </g>
+          )}
+
+          {bufferPoint && (
+            <g>
+              <circle
+                cx={(bufferPoint.lng - 26.0) * (1000.0 / 19.0)}
+                cy={(42.0 - bufferPoint.lat) * (600.0 / 6.0)}
+                r={(bufferPoint.radiusMeters / 1000.0) * 12}
+                fill="#ef4444"
+                fillOpacity="0.15"
+                stroke="#ef4444"
+                strokeWidth="2"
+                strokeDasharray="4 4"
+                className="animate-pulse"
+              />
+              <circle
+                cx={(bufferPoint.lng - 26.0) * (1000.0 / 19.0)}
+                cy={(42.0 - bufferPoint.lat) * (600.0 / 6.0)}
+                r="5"
+                fill="#ef4444"
+              />
+            </g>
+          )}
+
+          {heatmap && (
+            <g className="mix-blend-screen transition-opacity duration-500">
+              {heatNodes.map((hn) => (
+                <circle key={hn.id} cx={hn.cx} cy={hn.cy} r={hn.r} fill={hn.gradient} />
+              ))}
+              {events.map((e) => {
+                const cx = (e.longitude - 26.0) * (1000.0 / 19.0);
+                const cy = (42.0 - e.latitude) * (600.0 / 6.0);
+                return <circle key={e.id} cx={cx} cy={cy} r="65" fill="url(#heatHigh)" />;
+              })}
+            </g>
+          )}
+
+          {labels && (
+            <g pointerEvents="none">
+              {SEA_LABELS.map((s) => (
                 <text
-                  x={c.x + (c.major ? 7 : 5)}
-                  y={c.y + 3.2}
-                  fill={c.major ? "oklch(0.86 0 0 / 0.82)" : "oklch(0.70 0 0 / 0.5)"}
-                  fontSize={c.major ? 11 : 9}
-                  letterSpacing={c.major ? 0.4 : 0.2}
+                  key={s.n}
+                  x={s.x}
+                  y={s.y}
+                  textAnchor="middle"
+                  fill="oklch(0.62 0.05 244)"
+                  fontSize="10"
+                  letterSpacing="2.4"
                   fontFamily="var(--font-sans)"
                 >
-                  {c.n}
+                  {s.n}
                 </text>
-              </g>
-            ))}
-          </g>
-        )}
+              ))}
+              {CITIES.map((c) => (
+                <g key={c.n}>
+                  <circle
+                    cx={c.x}
+                    cy={c.y}
+                    r={c.major ? 2.6 : 1.6}
+                    fill="oklch(0.82 0 0 / 0.65)"
+                    stroke="oklch(0.18 0 0)"
+                    strokeWidth="0.8"
+                  />
+                  <text
+                    x={c.x + (c.major ? 7 : 5)}
+                    y={c.y + 3.2}
+                    fill={c.major ? "oklch(0.86 0 0 / 0.82)" : "oklch(0.70 0 0 / 0.5)"}
+                    fontSize={c.major ? 11 : 9}
+                    letterSpacing={c.major ? 0.4 : 0.2}
+                    fontFamily="var(--font-sans)"
+                  >
+                    {c.n}
+                  </text>
+                </g>
+              ))}
+            </g>
+          )}
+        </g>
       </svg>
     </div>
   );
@@ -459,6 +474,19 @@ export const MapCanvas = memo(function MapCanvas({
   className,
   compact = false,
 }: Props) {
+  const markerTransform = useMemo(() => {
+    if (!bufferPoint) return {};
+    const targetX = (bufferPoint.lng - 26.0) * (1000.0 / 19.0);
+    const targetY = (42.0 - bufferPoint.lat) * (600.0 / 6.0);
+    const dx = 500 - targetX;
+    const dy = 300 - targetY;
+    return {
+      transform: `translate(${dx}px, ${dy}px) scale(1.4)`,
+      transformOrigin: `${targetX}px ${targetY}px`,
+      transition: "transform 0.85s cubic-bezier(0.16, 1, 0.3, 1)"
+    };
+  }, [bufferPoint]);
+
   return (
     <div className={cn("relative overflow-hidden rounded-xl border border-border bg-card shadow-2xl", className)}>
       <BaseMap
@@ -488,7 +516,7 @@ export const MapCanvas = memo(function MapCanvas({
         </button>
       </div>
 
-      <div className="pointer-events-none absolute inset-0">
+      <div className="pointer-events-none absolute inset-0" style={markerTransform}>
         {clusters.length > 0
           ? clusters.map((c) => (
               <ClusterMarker

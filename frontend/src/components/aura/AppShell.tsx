@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { LogOut, Search, ShieldAlert, MapPin } from "lucide-react";
 import { NAVIGATION_CONFIG } from "@/config";
 import { hasAnyRole, clearStoredAuth, getStoredAuth, isAuthenticated, type AuthResponseDto } from "@/lib/api-client";
-import { SEARCHABLE_LOCATIONS, type SearchableLocation } from "@/lib/geo-turkey";
+import { SEARCHABLE_LOCATIONS, geocodeLocation, type SearchableLocation } from "@/lib/geo-turkey";
 import { NotificationPopover } from "./NotificationPopover";
 import { cn } from "@/lib/utils";
 import { StatusDot } from "./primitives";
@@ -60,15 +60,16 @@ export function TopNav({ floating = false }: { floating?: boolean }) {
     });
   }
 
-  function handleSearchSubmit(e: React.FormEvent) {
+  async function handleSearchSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!searchQuery.trim()) return;
+
     if (matchingLocations.length > 0) {
       handleSelectLocation(matchingLocations[0]);
-    } else if (searchQuery.trim()) {
-      const term = searchQuery.trim().toLowerCase();
-      const found = SEARCHABLE_LOCATIONS.find((l) => l.name.toLowerCase().includes(term));
-      if (found) {
-        handleSelectLocation(found);
+    } else {
+      const geoLoc = await geocodeLocation(searchQuery);
+      if (geoLoc) {
+        handleSelectLocation(geoLoc);
       }
     }
   }

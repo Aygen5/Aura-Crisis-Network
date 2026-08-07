@@ -78,7 +78,6 @@ public class MeteorologyService : IMeteorologyService
                 if (existingRisk != null)
                 {
                     existingRisk.UpdateRiskScores(existingRisk.SeismicRisk, floodRisk, landslideRisk, wildfireRisk);
-                    _districtRiskRepository.Update(existingRisk);
                 }
                 else
                 {

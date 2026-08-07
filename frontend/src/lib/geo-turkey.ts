@@ -192,6 +192,7 @@ export interface SearchableLocation {
 }
 
 export const SEARCHABLE_LOCATIONS: SearchableLocation[] = [
+  // İstanbul İlçeleri
   { name: "Kadıköy", type: "District", lat: 40.99, lng: 29.02 },
   { name: "Silivri", type: "District", lat: 41.07, lng: 28.24 },
   { name: "Fatih", type: "District", lat: 41.01, lng: 28.95 },
@@ -204,17 +205,123 @@ export const SEARCHABLE_LOCATIONS: SearchableLocation[] = [
   { name: "Maltepe", type: "District", lat: 40.93, lng: 29.13 },
   { name: "Pendik", type: "District", lat: 40.87, lng: 29.23 },
   { name: "Kartal", type: "District", lat: 40.9, lng: 29.18 },
-  { name: "İstanbul", type: "City", lat: 41.01, lng: 28.97 },
-  { name: "Ankara", type: "City", lat: 39.93, lng: 32.85 },
-  { name: "İzmir", type: "City", lat: 38.42, lng: 27.14 },
-  { name: "Bursa", type: "City", lat: 40.18, lng: 29.06 },
-  { name: "Antalya", type: "City", lat: 36.89, lng: 30.7 },
-  { name: "Adana", type: "City", lat: 37.0, lng: 35.32 },
-  { name: "Gaziantep", type: "City", lat: 37.06, lng: 37.38 },
-  { name: "Hatay", type: "City", lat: 36.2, lng: 36.16 },
-  { name: "Kahramanmaraş", type: "City", lat: 37.58, lng: 36.93 },
-  { name: "Malatya", type: "City", lat: 38.35, lng: 38.31 },
+
+  // Türkiye 81 İl
+  { name: "Adana", type: "City", lat: 37.00, lng: 35.32 },
   { name: "Adıyaman", type: "City", lat: 37.76, lng: 38.27 },
-  { name: "Trabzon", type: "City", lat: 41.0, lng: 39.71 },
+  { name: "Afyonkarahisar", type: "City", lat: 38.75, lng: 30.54 },
+  { name: "Ağrı", type: "City", lat: 39.72, lng: 43.05 },
+  { name: "Amasya", type: "City", lat: 40.65, lng: 35.83 },
+  { name: "Ankara", type: "City", lat: 39.93, lng: 32.85 },
+  { name: "Antalya", type: "City", lat: 36.89, lng: 30.70 },
+  { name: "Artvin", type: "City", lat: 41.18, lng: 41.82 },
+  { name: "Aydın", type: "City", lat: 37.84, lng: 27.84 },
+  { name: "Balıkesir", type: "City", lat: 39.65, lng: 27.88 },
+  { name: "Bilecik", type: "City", lat: 40.14, lng: 29.98 },
+  { name: "Bingöl", type: "City", lat: 38.88, lng: 40.49 },
+  { name: "Bitlis", type: "City", lat: 38.40, lng: 42.11 },
+  { name: "Bolu", type: "City", lat: 40.73, lng: 31.61 },
+  { name: "Burdur", type: "City", lat: 37.72, lng: 30.28 },
+  { name: "Bursa", type: "City", lat: 40.18, lng: 29.06 },
+  { name: "Çanakkale", type: "City", lat: 40.15, lng: 26.41 },
+  { name: "Çankırı", type: "City", lat: 40.60, lng: 33.61 },
+  { name: "Çorum", type: "City", lat: 40.55, lng: 34.95 },
+  { name: "Denizli", type: "City", lat: 37.77, lng: 29.08 },
+  { name: "Diyarbakır", type: "City", lat: 37.91, lng: 40.24 },
+  { name: "Edirne", type: "City", lat: 41.67, lng: 26.56 },
+  { name: "Elazığ", type: "City", lat: 38.67, lng: 39.22 },
+  { name: "Erzincan", type: "City", lat: 39.75, lng: 39.49 },
+  { name: "Erzurum", type: "City", lat: 39.90, lng: 41.27 },
+  { name: "Eskişehir", type: "City", lat: 39.77, lng: 30.52 },
+  { name: "Gaziantep", type: "City", lat: 37.06, lng: 37.38 },
+  { name: "Giresun", type: "City", lat: 40.91, lng: 38.39 },
+  { name: "Gümüşhane", type: "City", lat: 40.46, lng: 39.48 },
+  { name: "Hakkari", type: "City", lat: 37.57, lng: 43.74 },
+  { name: "Hatay", type: "City", lat: 36.20, lng: 36.16 },
+  { name: "Isparta", type: "City", lat: 37.76, lng: 30.55 },
+  { name: "Mersin", type: "City", lat: 36.81, lng: 34.64 },
+  { name: "İstanbul", type: "City", lat: 41.01, lng: 28.97 },
+  { name: "İzmir", type: "City", lat: 38.42, lng: 27.14 },
+  { name: "Kars", type: "City", lat: 40.60, lng: 43.10 },
+  { name: "Kastamonu", type: "City", lat: 41.37, lng: 33.77 },
+  { name: "Kayseri", type: "City", lat: 38.73, lng: 35.48 },
+  { name: "Kırklareli", type: "City", lat: 41.73, lng: 27.22 },
+  { name: "Kırşehir", type: "City", lat: 39.14, lng: 34.16 },
+  { name: "Kocaeli", type: "City", lat: 40.85, lng: 29.88 },
+  { name: "Konya", type: "City", lat: 37.87, lng: 32.48 },
+  { name: "Kütahya", type: "City", lat: 39.42, lng: 29.98 },
+  { name: "Malatya", type: "City", lat: 38.35, lng: 38.31 },
+  { name: "Manisa", type: "City", lat: 38.61, lng: 27.43 },
+  { name: "Kahramanmaraş", type: "City", lat: 37.58, lng: 36.93 },
+  { name: "Mardin", type: "City", lat: 37.31, lng: 40.74 },
+  { name: "Muğla", type: "City", lat: 37.21, lng: 28.36 },
+  { name: "Muş", type: "City", lat: 38.74, lng: 41.49 },
+  { name: "Nevşehir", type: "City", lat: 38.62, lng: 34.71 },
+  { name: "Niğde", type: "City", lat: 37.96, lng: 34.68 },
+  { name: "Ordu", type: "City", lat: 40.98, lng: 37.88 },
+  { name: "Rize", type: "City", lat: 41.02, lng: 40.52 },
+  { name: "Sakarya", type: "City", lat: 40.77, lng: 30.40 },
+  { name: "Samsun", type: "City", lat: 41.29, lng: 36.33 },
+  { name: "Siirt", type: "City", lat: 37.93, lng: 41.94 },
+  { name: "Sinop", type: "City", lat: 42.02, lng: 35.15 },
+  { name: "Sivas", type: "City", lat: 39.75, lng: 37.01 },
+  { name: "Tekirdağ", type: "City", lat: 40.98, lng: 27.51 },
+  { name: "Tokat", type: "City", lat: 40.31, lng: 36.55 },
+  { name: "Trabzon", type: "City", lat: 41.00, lng: 39.71 },
+  { name: "Tunceli", type: "City", lat: 39.10, lng: 39.54 },
+  { name: "Şanlıurfa", type: "City", lat: 37.16, lng: 38.79 },
+  { name: "Uşak", type: "City", lat: 38.68, lng: 29.40 },
+  { name: "Van", type: "City", lat: 38.50, lng: 43.38 },
+  { name: "Yozgat", type: "City", lat: 39.82, lng: 34.81 },
+  { name: "Zonguldak", type: "City", lat: 41.45, lng: 31.79 },
+  { name: "Aksaray", type: "City", lat: 38.37, lng: 34.03 },
+  { name: "Bayburt", type: "City", lat: 40.25, lng: 40.22 },
+  { name: "Karaman", type: "City", lat: 37.18, lng: 33.22 },
+  { name: "Kırıkkale", type: "City", lat: 39.84, lng: 33.51 },
+  { name: "Batman", type: "City", lat: 37.88, lng: 41.13 },
+  { name: "Şırnak", type: "City", lat: 37.51, lng: 42.45 },
+  { name: "Bartın", type: "City", lat: 41.63, lng: 32.33 },
+  { name: "Ardahan", type: "City", lat: 41.11, lng: 42.70 },
+  { name: "Iğdır", type: "City", lat: 39.92, lng: 44.04 },
+  { name: "Yalova", type: "City", lat: 40.65, lng: 29.27 },
+  { name: "Karabük", type: "City", lat: 41.20, lng: 32.62 },
+  { name: "Kilis", type: "City", lat: 36.71, lng: 37.11 },
+  { name: "Osmaniye", type: "City", lat: 37.07, lng: 36.24 },
+  { name: "Düzce", type: "City", lat: 40.84, lng: 31.16 },
+
+  // Önemli İlçeler & Turizm Merkezleri
+  { name: "Alanya", type: "District", lat: 36.54, lng: 31.99 },
+  { name: "Bodrum", type: "District", lat: 37.03, lng: 27.43 },
+  { name: "Çeşme", type: "District", lat: 38.32, lng: 26.30 },
+  { name: "Gebze", type: "District", lat: 40.80, lng: 29.43 },
+  { name: "Fethiye", type: "District", lat: 36.62, lng: 29.11 },
+  { name: "Marmaris", type: "District", lat: 36.85, lng: 28.27 },
+  { name: "Kuşadası", type: "District", lat: 37.85, lng: 27.25 },
+  { name: "Manavgat", type: "District", lat: 36.78, lng: 31.44 },
 ];
+
+export async function geocodeLocation(query: string): Promise<SearchableLocation | null> {
+  const normalized = query.trim().toLowerCase();
+  const found = SEARCHABLE_LOCATIONS.find((l) => l.name.toLowerCase() === normalized) ||
+                SEARCHABLE_LOCATIONS.find((l) => l.name.toLowerCase().includes(normalized));
+
+  if (found) return found;
+
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&countrycodes=tr&format=json&limit=1`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (Array.isArray(data) && data.length > 0) {
+      return {
+        name: data[0].display_name.split(",")[0] || query,
+        type: "City",
+        lat: parseFloat(data[0].lat),
+        lng: parseFloat(data[0].lon)
+      };
+    }
+  } catch {
+    // Fail silently on network issue
+  }
+  return null;
+}
 
