@@ -28,7 +28,20 @@ export function clearStoredAuth(): void {
 
 export function isAuthenticated(): boolean {
   const auth = getStoredAuth();
-  return auth !== null && !!auth.accessToken;
+  if (!auth || !auth.accessToken) return false;
+  if (auth.refreshTokenExpiresAt) {
+    try {
+      const expiresAt = new Date(auth.refreshTokenExpiresAt).getTime();
+      if (isNaN(expiresAt) || Date.now() >= expiresAt) {
+        clearStoredAuth();
+        return false;
+      }
+    } catch {
+      clearStoredAuth();
+      return false;
+    }
+  }
+  return true;
 }
 
 export function getUserRoles(): string[] {

@@ -3,10 +3,10 @@ import { Link } from "@tanstack/react-router";
 import { Bell, CheckCheck, ExternalLink, ShieldAlert, AlertTriangle, Info, CheckCircle2 } from "lucide-react";
 import {
   useUserNotifications,
-  useUnreadNotificationCount,
   useMarkNotificationRead,
   useMarkAllNotificationsRead,
 } from "@/queries/useNotificationsQuery";
+import { isAuthenticated } from "@/lib/api-client";
 import type { NotificationType } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -20,9 +20,10 @@ const typeToneMap: Record<NotificationType, { color: string; icon: any }> = {
 export function NotificationPopover() {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const authed = isAuthenticated();
 
-  const { data: notifications = [] } = useUserNotifications(10);
-  const unreadCount = useUnreadNotificationCount();
+  const { data: notifications = [] } = useUserNotifications(20);
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
   const markReadMutation = useMarkNotificationRead();
   const markAllReadMutation = useMarkAllNotificationsRead();
 
@@ -35,6 +36,10 @@ export function NotificationPopover() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  if (!authed) {
+    return null;
+  }
 
   return (
     <div className="relative" ref={containerRef}>

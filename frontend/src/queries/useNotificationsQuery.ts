@@ -4,28 +4,23 @@ import { isAuthenticated } from "@/lib/api-client";
 import type { NotificationDto } from "@/types";
 
 export function useUserNotifications(limit = 20) {
+  const authed = isAuthenticated();
   return useQuery<NotificationDto[]>({
     queryKey: ["notifications", limit],
     queryFn: () => notificationsService.getMyNotifications(limit),
-    enabled: isAuthenticated(),
+    enabled: authed,
     staleTime: 30000,
-    retry: (failureCount, error: any) => {
-      const msg = error?.message || "";
-      if (msg.includes("401") || msg.includes("yetkiniz") || !isAuthenticated()) {
-        return false;
-      }
-      return failureCount < 2;
-    },
-    refetchInterval: () => {
-      if (!isAuthenticated()) return false;
-      return 30000;
-    },
+    gcTime: 300000,
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchInterval: () => (isAuthenticated() ? 30000 : false),
   });
 }
 
-export function useUnreadNotificationCount() {
-  const { data: notifications = [] } = useUserNotifications();
-  return notifications.filter((n) => !n.isRead).length;
+export function useUnreadNotificationCount(providedList?: NotificationDto[]) {
+  const { data: notifications = [] } = useUserNotifications(20);
+  const list = providedList ?? notifications;
+  return list.filter((n) => !n.isRead).length;
 }
 
 export function useMarkNotificationRead() {
@@ -40,7 +35,7 @@ export function useMarkNotificationRead() {
 
 export function useMarkAllNotificationsRead() {
   const queryClient = useQueryClient();
-  const { data: notifications = [] } = useUserNotifications();
+  const { data: notifications = [] } = useUserNotifications(20);
 
   return useMutation({
     mutationFn: async () => {
