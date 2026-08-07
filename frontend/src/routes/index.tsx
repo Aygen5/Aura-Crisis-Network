@@ -33,6 +33,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    lat: typeof search.lat === "number" ? search.lat : (search.lat ? Number(search.lat) : undefined),
+    lng: typeof search.lng === "number" ? search.lng : (search.lng ? Number(search.lng) : undefined),
+  }),
   beforeLoad: () => {
     if (!isAuthenticated()) {
       throw redirect({ to: "/login" });
@@ -185,6 +189,11 @@ function CommandCenter() {
     setClickPoint(point);
   }
 
+  const searchParams = Route.useSearch();
+  const searchBufferPoint = searchParams.lat && searchParams.lng
+    ? { lat: searchParams.lat, lng: searchParams.lng, radiusMeters: 5000 }
+    : null;
+
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-background">
       <MapCanvas
@@ -194,6 +203,7 @@ function CommandCenter() {
         active={active}
         selectedId={selectedId}
         selectedUnitId={selectedUnit?.id}
+        bufferPoint={searchBufferPoint}
         onSelect={(e) => setSelected(e.id)}
         onUnitSelect={(u) => setSelectedUnit(u)}
         onMapClick={handleMapClick}

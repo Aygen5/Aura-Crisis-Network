@@ -53,10 +53,24 @@ export function TopNav({ floating = false }: { floating?: boolean }) {
   function handleSelectLocation(loc: SearchableLocation) {
     setSearchQuery(loc.name);
     setSearchOpen(false);
+    const targetRoute = pathname === "/" ? "/" : "/risk";
     navigate({
-      to: "/risk",
+      to: targetRoute,
       search: { lat: loc.lat, lng: loc.lng } as any,
     });
+  }
+
+  function handleSearchSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (matchingLocations.length > 0) {
+      handleSelectLocation(matchingLocations[0]);
+    } else if (searchQuery.trim()) {
+      const term = searchQuery.trim().toLowerCase();
+      const found = SEARCHABLE_LOCATIONS.find((l) => l.name.toLowerCase().includes(term));
+      if (found) {
+        handleSelectLocation(found);
+      }
+    }
   }
 
   const matchingLocations = searchQuery.trim()
@@ -104,19 +118,21 @@ export function TopNav({ floating = false }: { floating?: boolean }) {
 
       <div className="ml-auto flex items-center gap-3">
         <div className="relative hidden md:block" ref={searchRef}>
-          <label className="group flex h-9 w-80 items-center gap-2.5 rounded-lg border border-border bg-background/60 px-3 transition-colors duration-200 focus-within:border-ring">
-            <Search className="h-3.5 w-3.5 text-muted-foreground" />
-            <input
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setSearchOpen(true);
-              }}
-              onFocus={() => setSearchOpen(true)}
-              placeholder="İl, ilçe (Kadıköy, Silivri...) ara..."
-              className="w-full bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
-            />
-          </label>
+          <form onSubmit={handleSearchSubmit}>
+            <label className="group flex h-9 w-80 items-center gap-2.5 rounded-lg border border-border bg-background/60 px-3 transition-colors duration-200 focus-within:border-ring">
+              <Search className="h-3.5 w-3.5 text-muted-foreground" />
+              <input
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setSearchOpen(true);
+                }}
+                onFocus={() => setSearchOpen(true)}
+                placeholder="İl, ilçe (Kadıköy, Silivri...) ara..."
+                className="w-full bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
+              />
+            </label>
+          </form>
 
           {searchOpen && matchingLocations.length > 0 && (
             <div className="absolute left-0 top-11 z-50 w-80 overflow-hidden rounded-xl border border-border bg-card p-2 shadow-2xl backdrop-blur-xl animate-scale-in">

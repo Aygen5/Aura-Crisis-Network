@@ -367,10 +367,10 @@ export function MapCanvas({
           ? clusters.map((c) => {
               const toneColor =
                 c.maxSeverity >= 80
-                  ? "bg-red-500 border-red-400 shadow-red-500/50 animate-pulse"
+                  ? "bg-red-600 border-red-400 shadow-red-500/60 shadow-lg animate-pulse ring-4 ring-red-500/20"
                   : c.maxSeverity >= 50
-                    ? "bg-amber-500 border-amber-400 shadow-amber-500/50"
-                    : "bg-blue-500 border-blue-400 shadow-blue-500/50";
+                    ? "bg-red-500/90 border-red-400 shadow-red-500/40 shadow-md"
+                    : "bg-red-500/80 border-red-500/90 shadow-red-500/30 shadow-md";
 
               return (
                 <button

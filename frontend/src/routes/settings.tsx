@@ -131,16 +131,17 @@ function Settings() {
               </div>
               <div className="grid gap-5 p-6 sm:grid-cols-2">
                 {[
-                  ["Ad Soyad", user?.fullName || "-"],
-                  ["Kullanıcı ID", user?.userId || "-"],
-                  ["E-Posta", user?.email || "-"],
+                  ["Ad Soyad", user?.fullName || ""],
+                  ["Kullanıcı ID", user?.userId || ""],
+                  ["E-Posta", user?.email || ""],
                   ["Rol Yetkisi", user?.roles?.join(", ") || "Citizen"],
                 ].map(([l, v]) => (
                   <label key={l} className="block">
                     <span className="mb-2 block text-[12px] font-medium">{l}</span>
                     <input
                       readOnly
-                      defaultValue={v}
+                      value={v}
+                      onChange={() => {}}
                       className="h-10 w-full rounded-lg border border-border bg-background/50 px-3 text-[13px] outline-none transition-colors duration-200 focus:border-ring cursor-default"
                     />
                   </label>
