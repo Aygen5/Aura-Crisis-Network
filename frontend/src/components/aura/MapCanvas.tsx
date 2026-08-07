@@ -365,6 +365,35 @@ export const MapCanvas = memo(function MapCanvas({
       <div className="absolute inset-0 pointer-events-none">
         {clusters.length > 0
           ? clusters.map((c) => {
+              if (c.pointCount === 1) {
+                const meta = disasterMeta[c.primaryDisasterType] ?? disasterMeta.Earthquake;
+                const selected = selectedId === c.clusterId;
+
+                return (
+                  <button
+                    key={c.clusterId}
+                    onClick={() => onClusterSelect?.(c)}
+                    style={{
+                      left: `${Math.max(4, Math.min(96, ((c.longitude - 26.0) / 19.0) * 100))}%`,
+                      top: `${Math.max(4, Math.min(96, ((42.0 - c.latitude) / 6.0) * 100))}%`,
+                    }}
+                    className={cn(
+                      "pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300 z-20 hover:scale-110",
+                      selected ? "z-30 scale-125" : ""
+                    )}
+                  >
+                    <span
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-current/30 bg-card/90 shadow-lg backdrop-blur-md"
+                      style={{ color: meta.color }}
+                    >
+                      <span className="h-4 w-4">
+                        <DisasterIcon type={c.primaryDisasterType} />
+                      </span>
+                    </span>
+                  </button>
+                );
+              }
+
               const toneColor =
                 c.maxSeverity >= 80
                   ? "bg-red-600 border-red-400 shadow-red-500/60 shadow-lg animate-pulse ring-4 ring-red-500/20"
