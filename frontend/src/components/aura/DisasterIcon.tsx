@@ -2,7 +2,7 @@ import type { DisasterType } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 type Props = {
-  type: DisasterType | string;
+  type: DisasterType | string | number;
   className?: string;
   animated?: boolean;
 };
@@ -18,7 +18,31 @@ export function DisasterIcon({ type, className, animated = true }: Props) {
     className: cn("h-full w-full", className),
   };
 
-  const normalizedType = type?.toLowerCase();
+  let normalizedType = "";
+  if (typeof type === "number") {
+    switch (type) {
+      case 0:
+        normalizedType = "earthquake";
+        break;
+      case 1:
+        normalizedType = "flood";
+        break;
+      case 2:
+        normalizedType = "wildfire";
+        break;
+      case 3:
+        normalizedType = "landslide";
+        break;
+      case 4:
+        normalizedType = "medical";
+        break;
+      default:
+        normalizedType = "report";
+        break;
+    }
+  } else if (typeof type === "string") {
+    normalizedType = type.toLowerCase();
+  }
 
   switch (normalizedType) {
     case "earthquake":
