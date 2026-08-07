@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArrowRight, ShieldAlert, ShieldCheck } from "lucide-react";
 import { AuthShell } from "@/components/aura/AuthShell";
-import { loginUser, registerUser } from "@/lib/api-client";
+import { registerUser } from "@/lib/api-client";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({
@@ -38,8 +38,10 @@ function SignUp() {
 
     try {
       await registerUser(email, password, fullName, role);
-      await loginUser(email, password);
-      navigate({ to: "/" });
+      navigate({
+        to: "/login",
+        search: { registered: true, email },
+      });
     } catch (err: any) {
       setError(err?.message || "Kayıt işlemi başarısız. Lütfen tekrar deneyiniz.");
     } finally {
@@ -131,7 +133,7 @@ function SignUp() {
             disabled={loading}
             className="mt-2 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-foreground text-[13px] font-medium text-background transition-all duration-200 hover:opacity-90 disabled:opacity-50"
           >
-            {loading ? "Hesap Oluşturuluyor..." : "Kayıt Ol ve Giriş Yap"}
+            {loading ? "Hesap Oluşturuluyor..." : "Kayıt Ol"}
             <ArrowRight className="h-3.5 w-3.5" />
           </button>
         </form>

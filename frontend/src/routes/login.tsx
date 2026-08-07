@@ -1,11 +1,20 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowRight, Lock, ShieldAlert } from "lucide-react";
+import { ArrowRight, CheckCircle2, Lock, ShieldAlert } from "lucide-react";
 import { StatusDot } from "@/components/aura/primitives";
 import { AuthShell } from "@/components/aura/AuthShell";
 import { isAuthenticated, loginUser } from "@/lib/api-client";
 
+type LoginSearch = {
+  registered?: boolean;
+  email?: string;
+};
+
 export const Route = createFileRoute("/login")({
+  validateSearch: (search: Record<string, unknown>): LoginSearch => ({
+    registered: search.registered === "true" || search.registered === true,
+    email: (search.email as string) || "",
+  }),
   head: () => ({
     meta: [
       { title: "Giriş Yap — Aura Crisis Network" },
@@ -20,9 +29,15 @@ export const Route = createFileRoute("/login")({
 
 function Login() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const search = Route.useSearch();
+  const [email, setEmail] = useState(search.email || "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(
+    search.registered
+      ? "Kayıt işleminiz başarıyla tamamlandı! Lütfen kayıt olduğunuz e-posta ve şifre ile giriş yapınız."
+      : null
+  );
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -40,6 +55,7 @@ function Login() {
 
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
       await loginUser(email, password);
@@ -66,6 +82,13 @@ function Login() {
             </p>
           </div>
         </div>
+
+        {success && (
+          <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-[13px] text-emerald-400">
+            <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
+            <span>{success}</span>
+          </div>
+        )}
 
         {error && (
           <div className="mb-5 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-[13px] text-red-400">
