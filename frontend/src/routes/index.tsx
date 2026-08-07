@@ -190,28 +190,8 @@ function CommandCenter() {
   }
 
   function handleClusterSelect(c: any) {
-    if (c.pointCount === 1) {
-      const found = events.find((e) => e.id === c.clusterId) || {
-        id: c.clusterId,
-        title: `${c.primaryDisasterType} Olayı`,
-        type: c.primaryDisasterType,
-        severity: c.maxSeverity,
-        metric: Number((c.maxSeverity / 10).toFixed(1)),
-        metricLabel: "Büyüklük",
-        source: "PostGIS GIS Engine",
-        status: "Active",
-        district: "Marmara / İstanbul",
-        locationName: "Kriz Odak Noktası",
-        summary: "Live PostGIS kümeleme servisinden tespit edilen olay.",
-        latitude: c.latitude,
-        longitude: c.longitude,
-        detectedAt: new Date().toISOString(),
-      };
-      setSelected(found.id);
-    } else {
-      setZoomLevel((z) => Math.min(18, z + 3));
-      setClickPoint({ lat: c.latitude, lng: c.longitude });
-    }
+    setZoomLevel((z) => Math.min(18, z + 3));
+    setClickPoint({ lat: c.latitude, lng: c.longitude });
   }
 
   const searchParams = Route.useSearch();
@@ -504,89 +484,6 @@ function CommandCenter() {
       </button>
 
       <CreateReportModal open={createModalOpen} onClose={() => setCreateModalOpen(false)} />
-
-      {selectedEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-card shadow-2xl animate-scale-in">
-            <div className="flex items-center justify-between border-b border-border px-6 py-4">
-              <div className="flex items-center gap-3">
-                <span
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-current/25 bg-background/50"
-                  style={{ color: disasterMeta[selectedEvent.type]?.color || "#ef4444" }}
-                >
-                  <span className="h-5 w-5">
-                    <DisasterIcon type={selectedEvent.type} />
-                  </span>
-                </span>
-                <div>
-                  <h3 className="text-[15px] font-semibold">{selectedEvent.title}</h3>
-                  <p className="text-[12px] text-muted-foreground">
-                    {selectedEvent.district}, {selectedEvent.locationName}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelected(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="space-y-4 p-6">
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div className="rounded-lg border border-border bg-secondary/30 p-3">
-                  <span className="label-xs">Şiddet İndeksi</span>
-                  <div className="num mt-1 text-[16px] font-semibold text-primary">{selectedEvent.severity}/100</div>
-                </div>
-                <div className="rounded-lg border border-border bg-secondary/30 p-3">
-                  <span className="label-xs">{selectedEvent.metricLabel || "Büyüklük"}</span>
-                  <div className="num mt-1 text-[16px] font-semibold text-primary">{selectedEvent.metric}</div>
-                </div>
-                <div className="rounded-lg border border-border bg-secondary/30 p-3">
-                  <span className="label-xs">Kaynak</span>
-                  <div className="truncate text-[13px] font-medium">{selectedEvent.source}</div>
-                </div>
-                <div className="rounded-lg border border-border bg-secondary/30 p-3">
-                  <span className="label-xs">Durum</span>
-                  <div className="text-[13px] font-medium text-emerald-400">{selectedEvent.status}</div>
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-border bg-secondary/20 p-4 space-y-2 text-[12px]">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Tespit Zamanı:</span>
-                  <span className="font-medium">{new Date(selectedEvent.detectedAt).toLocaleString("tr-TR")}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Koordinatlar:</span>
-                  <span className="font-medium num">{selectedEvent.latitude.toFixed(4)}° N, {selectedEvent.longitude.toFixed(4)}° E</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Detay Özet:</span>
-                  <span className="font-medium text-right max-w-[260px] truncate">{selectedEvent.summary}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  onClick={() => setSelected(null)}
-                  className="h-9 rounded-lg border border-border px-4 text-[13px] text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-                >
-                  Kapat
-                </button>
-                <Link
-                  to="/event/$id"
-                  params={{ id: selectedEvent.id }}
-                  className="flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-[13px] font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-                >
-                  Detaylı İncele (Sayfaya Git) <ChevronRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
