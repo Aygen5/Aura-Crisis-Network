@@ -121,7 +121,7 @@ function CommandCenter() {
     risk: true,
   });
   const [playing, setPlaying] = useState(false);
-  const [progress, setProgress] = useState(64);
+  const [progress, setProgress] = useState(100);
   const [win, setWin] = useState("24 Hours");
   const [speed, setSpeed] = useState("1x");
   const [notes, setNotes] = useState<NotificationItem[]>([]);
@@ -131,6 +131,84 @@ function CommandCenter() {
   const { data: events = [] } = useActiveEvents();
   const { data: summary } = useAnalyticsSummary();
   const { data: units = [] } = useEmergencyUnits();
+
+  // 1. Filter events by selected time window (24 Hours, 72 Hours, 7 Days)
+  const windowedEvents = useMemo(() => {
+    if (!events || events.length === 0) return [];
+    const hoursMap: Record<string, number> = {
+      "24 Hours": 24,
+      "72 Hours": 72,
+      "7 Days": 168,
+    };
+    const hours = hoursMap[win] || 24;
+    const cutoffMs = Date.now() - hours * 60 * 60 * 1000;
+
+    const filtered = events.filter((e) => {
+      const t = new Date(e.detectedAt).getTime();
+      return !isNaN(t) && t >= cutoffMs;
+    });
+
+    return filtered.length > 0 ? filtered : events;
+  }, [events, win]);
+
+  // 2. Calculate chronological start/end time bounds for replay timeline
+  const timeBounds = useMemo(() => {
+    if (!windowedEvents || windowedEvents.length === 0) {
+      const now = Date.now();
+      return { minTime: now - 86400000, maxTime: now };
+    }
+    const times = windowedEvents
+      .map((e) => new Date(e.detectedAt).getTime())
+      .filter((t) => !isNaN(t));
+
+    if (times.length === 0) {
+      const now = Date.now();
+      return { minTime: now - 86400000, maxTime: now };
+    }
+
+    const minTime = Math.min(...times);
+    const maxTime = Math.max(...times);
+
+    if (maxTime - minTime < 3600000) {
+      return { minTime: maxTime - 3600000, maxTime };
+    }
+
+    return { minTime, maxTime };
+  }, [windowedEvents]);
+
+  // 3. Playback timer for timeline replay animation
+  useEffect(() => {
+    if (!playing) return;
+
+    const speedMultipliers: Record<string, number> = {
+      "1x": 0.8,
+      "2x": 2.0,
+      "3x": 4.5,
+    };
+    const step = speedMultipliers[speed] || 0.8;
+
+    const timer = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          setPlaying(false);
+          return 100;
+        }
+        return Math.min(100, prev + step);
+      });
+    }, 100);
+
+    return () => clearInterval(timer);
+  }, [playing, speed]);
+
+  // 4. Chronologically filtered active events for map rendering and live feed
+  const displayEvents = useMemo(() => {
+    if (progress >= 100) return windowedEvents;
+    const currentCutoff = timeBounds.minTime + (timeBounds.maxTime - timeBounds.minTime) * (progress / 100);
+    return windowedEvents.filter((e) => {
+      const t = new Date(e.detectedAt).getTime();
+      return isNaN(t) || t <= currentCutoff;
+    });
+  }, [windowedEvents, timeBounds, progress]);
 
   const { data: nearestUnits = [] } = useNearestEmergencyUnits(
     clickPoint?.lat ?? null,
@@ -228,7 +306,7 @@ function CommandCenter() {
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-background">
       <MapCanvas
-        events={events}
+        events={displayEvents}
         clusters={clusters}
         units={units}
         active={active}
@@ -250,7 +328,7 @@ function CommandCenter() {
         <StatCard
           className="pointer-events-auto"
           label="Aktif Afetler"
-          value={summary ? summary.totalActiveEvents.toString() : events.length.toString()}
+          value={displayEvents.length.toString()}
           delta="Canlı Veri"
           icon={<Activity className="h-3.5 w-3.5" />}
         />
@@ -286,11 +364,11 @@ function CommandCenter() {
             <StatusDot tone="online" />
             <h2 className="text-[13px] font-semibold">Canlı Olay Akışı</h2>
           </div>
-          <span className="num text-[11px] text-muted-foreground">{events.length} olay</span>
+          <span className="num text-[11px] text-muted-foreground">{displayEvents.length} olay</span>
         </header>
 
         <div className="scroll-slim flex-1 overflow-y-auto p-2">
-          {events.map((e) => {
+          {displayEvents.map((e) => {
             const meta = disasterMeta[e.type] ?? disasterMeta.Earthquake;
             const isSel = selectedId === e.id;
             return (
@@ -457,8 +535,16 @@ function CommandCenter() {
         <div className="glass flex items-center gap-4 rounded-xl px-4 py-3">
           <div className="flex items-center gap-1">
             <button
-              onClick={() => setPlaying((p) => !p)}
+              onClick={() => {
+                if (playing) {
+                  setPlaying(false);
+                } else {
+                  if (progress >= 100) setProgress(0);
+                  setPlaying(true);
+                }
+              }}
               className="flex h-9 w-9 items-center justify-center rounded-lg bg-foreground text-background transition-transform duration-200 hover:scale-105"
+              title={playing ? "Durdur (Pause)" : "Oynat (Play Replay)"}
             >
               {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
             </button>
@@ -468,6 +554,7 @@ function CommandCenter() {
                 setPlaying(true);
               }}
               className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 text-muted-foreground transition-colors duration-200 hover:bg-foreground/8 hover:text-foreground"
+              title="Başa Dön ve Oynat (Reset & Replay)"
             >
               <RotateCcw className="h-4 w-4" />
             </button>
@@ -475,7 +562,7 @@ function CommandCenter() {
 
           <div className="flex-1">
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span className="num">Tekrar Oynat · {win}</span>
+              <span className="num">Tekrar Oynat · {win} ({speed})</span>
               <span className="num">{Math.round(progress)}%</span>
             </div>
             <input
@@ -488,7 +575,7 @@ function CommandCenter() {
             />
           </div>
 
-          <Segmented options={windows} value={win} onChange={setWin} />
+          <Segmented options={windows} value={win} onChange={(v) => { setWin(v); setProgress(100); }} />
           <Segmented options={speeds} value={speed} onChange={setSpeed} />
         </div>
       </div>
