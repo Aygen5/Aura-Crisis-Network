@@ -127,8 +127,12 @@ function Analytics() {
     ];
 
     return divisions.map((div) => {
-      const matchedUnits = emergencyUnits.filter((u) => u.name.startsWith(div.prefix) || u.code.startsWith(div.prefix));
-      const dispatched = matchedUnits.filter((u) => u.status === "Dispatched").length;
+      const matchedUnits = (emergencyUnits || []).filter(
+        (u) =>
+          (u?.callSign && u.callSign.toUpperCase().includes(div.prefix.toUpperCase())) ||
+          (u?.plateNumber && u.plateNumber.toUpperCase().includes(div.prefix.toUpperCase()))
+      );
+      const dispatched = matchedUnits.filter((u) => u?.status === "Dispatched").length;
       const avgMinutes = matchedUnits.length > 0 ? Number((5.0 + (dispatched * 1.5) + (matchedUnits.length % 3)).toFixed(1)) : 0;
 
       return {
