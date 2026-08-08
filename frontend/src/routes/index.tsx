@@ -466,22 +466,55 @@ function CommandCenter() {
         )}
 
         <section className="glass rounded-xl p-4 animate-fade-in">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[13px] font-semibold">Saha Filo Takibi</h2>
-            <AuraBadge tone="online">Canlı GPS Akışı</AuraBadge>
+          <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+            <div className="flex items-center gap-2">
+              <Truck className="h-4 w-4 text-primary" />
+              <h2 className="text-[13px] font-semibold tracking-tight">Saha Filo Takibi</h2>
+            </div>
+            <AuraBadge tone="online">{units.length} Araç Aktif</AuraBadge>
           </div>
-          <ul className="mt-3 space-y-2">
-            <li className="flex items-center gap-2 text-[12px]">
-              <StatusDot tone="online" pulse={false} />
-              <span className="flex-1 text-foreground/90">PostGIS KNN Hesabı</span>
-              <span className="num text-emerald-400 font-bold">Milisaniye</span>
-            </li>
-            <li className="flex items-center gap-2 text-[12px]">
-              <StatusDot tone="online" pulse={false} />
-              <span className="flex-1 text-foreground/90">Canlı GPS Konum Akışı</span>
-              <span className="num text-primary font-bold">{units.length} Araç</span>
-            </li>
-          </ul>
+
+          <div className="mt-3 space-y-1.5 max-h-44 overflow-y-auto scroll-slim pr-1">
+            {units.length === 0 ? (
+              <div className="py-4 text-center text-[12px] text-muted-foreground">
+                Sahada aktif araç bulunmamaktadır.
+              </div>
+            ) : (
+              units.map((u) => (
+                <button
+                  key={u.id}
+                  onClick={() => setSelectedUnit(u)}
+                  className="flex w-full items-center justify-between rounded-lg border border-white/5 bg-foreground/5 p-2 text-left text-xs transition-colors hover:bg-foreground/10"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-foreground truncate">{u.callSign}</span>
+                      <span className="text-[10px] text-muted-foreground font-mono">{u.plateNumber}</span>
+                    </div>
+                    <span className="block text-[10px] text-muted-foreground truncate">
+                      {u.type === "SearchAndRescue"
+                        ? "AFAD Arama Kurtarma"
+                        : u.type === "Ambulance"
+                        ? "UMKE / 112 Ambulans"
+                        : u.type === "FireEngine"
+                        ? "İtfaiye Arazöz"
+                        : "Polis / Devriye"}
+                    </span>
+                  </div>
+                  <span
+                    className={cn(
+                      "shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase border",
+                      u.status === "Available"
+                        ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                        : "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                    )}
+                  >
+                    {u.status === "Available" ? "Müsait" : "Görevde"}
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
         </section>
 
         <section className="glass flex flex-1 flex-col overflow-hidden rounded-xl p-4 animate-fade-in">
