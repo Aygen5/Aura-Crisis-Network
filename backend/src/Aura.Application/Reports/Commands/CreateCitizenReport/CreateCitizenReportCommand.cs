@@ -15,7 +15,8 @@ public record CreateCitizenReportCommand(
     string ReporterPhone,
     double Latitude,
     double Longitude,
-    string Summary
+    string Summary,
+    string? ReporterUserId = null
 ) : IRequest<CitizenReportDto>;
 
 public class CreateCitizenReportCommandHandler : IRequestHandler<CreateCitizenReportCommand, CitizenReportDto>
@@ -45,7 +46,8 @@ public class CreateCitizenReportCommandHandler : IRequestHandler<CreateCitizenRe
             request.ReporterName,
             request.ReporterPhone,
             location,
-            request.Summary
+            request.Summary,
+            request.ReporterUserId
         );
 
         await _citizenReportRepository.AddAsync(report, cancellationToken);
@@ -65,7 +67,9 @@ public class CreateCitizenReportCommandHandler : IRequestHandler<CreateCitizenRe
             report.Status,
             report.CorroborationCount,
             report.Summary,
-            report.CreatedAt
+            report.CreatedAt,
+            null,
+            report.ReporterUserId
         );
     }
 }

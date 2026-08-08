@@ -8,6 +8,7 @@ public interface ICitizenReportRepository
 {
     Task<CitizenReport?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<CitizenReport>> GetReportsByStatusAsync(ReportStatus status, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<CitizenReport>> GetReportsByStatusAsync(ReportStatus status, string? currentUserId, bool isOperatorOrAdmin, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<CitizenReport>> GetNearbyReportsAsync(GeoPoint location, double radiusInMeters, CancellationToken cancellationToken = default);
     Task AddAsync(CitizenReport entity, CancellationToken cancellationToken = default);
     Task AddAttachmentAsync(ReportAttachment attachment, CancellationToken cancellationToken = default);

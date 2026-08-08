@@ -52,6 +52,10 @@ public class CitizenReportConfiguration : IEntityTypeConfiguration<CitizenReport
         builder.Property(r => r.Summary)
             .HasMaxLength(2000);
 
+        builder.Property(r => r.ReporterUserId)
+            .HasMaxLength(128)
+            .IsRequired(false);
+
         builder.HasMany(r => r.Attachments)
             .WithOne()
             .HasForeignKey(a => a.CitizenReportId)

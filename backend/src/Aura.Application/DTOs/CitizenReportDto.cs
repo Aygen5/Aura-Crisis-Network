@@ -15,5 +15,6 @@ public record CitizenReportDto(
     int CorroborationCount,
     string Summary,
     DateTimeOffset CreatedAt,
-    IReadOnlyList<ReportAttachmentDto>? Attachments = null
+    IReadOnlyList<ReportAttachmentDto>? Attachments = null,
+    string? ReporterUserId = null
 );

@@ -17,6 +17,7 @@ public class CitizenReport : BaseEntity
     public ReportStatus Status { get; private set; }
     public int CorroborationCount { get; private set; }
     public string Summary { get; private set; }
+    public string? ReporterUserId { get; private set; }
 
     public IReadOnlyCollection<ReportAttachment> Attachments => _attachments.AsReadOnly();
 
@@ -31,7 +32,8 @@ public class CitizenReport : BaseEntity
         string reporterName,
         string reporterPhone,
         GeoPoint location,
-        string summary)
+        string summary,
+        string? reporterUserId = null)
     {
         if (string.IsNullOrWhiteSpace(title)) throw new ArgumentException("Title cannot be empty.", nameof(title));
         if (string.IsNullOrWhiteSpace(district)) throw new ArgumentException("District cannot be empty.", nameof(district));
@@ -45,6 +47,7 @@ public class CitizenReport : BaseEntity
         Status = ReportStatus.Pending;
         CorroborationCount = 1;
         Summary = summary ?? string.Empty;
+        ReporterUserId = reporterUserId;
     }
 
     public void Verify()

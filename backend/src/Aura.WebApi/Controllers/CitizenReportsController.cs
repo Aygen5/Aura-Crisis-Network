@@ -1,3 +1,4 @@
+using Aura.Application.Common.Interfaces;
 using Aura.Application.DTOs;
 using Aura.Application.Reports.Commands.CreateCitizenReport;
 using Aura.Application.Reports.Commands.UpdateReportStatus;
@@ -10,31 +11,42 @@ using Microsoft.AspNetCore.Mvc;
 namespace Aura.WebApi.Controllers;
 
 [Route("api/v1/reports")]
+[Authorize]
 public class CitizenReportsController : BaseApiController
 {
+    private readonly ICurrentUserService _currentUserService;
+
+    public CitizenReportsController(ICurrentUserService currentUserService)
+    {
+        _currentUserService = currentUserService;
+    }
+
     [HttpGet]
-    [AllowAnonymous]
     public async Task<ActionResult<IReadOnlyList<CitizenReportDto>>> GetReportsByStatus(
         [FromQuery] ReportStatus status = ReportStatus.Pending,
         CancellationToken cancellationToken = default)
     {
-        var query = new GetReportsByStatusQuery(status);
+        var userId = _currentUserService.UserId;
+        var isOperatorOrAdmin = User.IsInRole("Operator") || User.IsInRole("Admin");
+
+        var query = new GetReportsByStatusQuery(status, userId, isOperatorOrAdmin);
         var result = await Mediator.Send(query, cancellationToken);
         return Ok(result);
     }
 
     [HttpPost]
-    [AllowAnonymous]
     public async Task<ActionResult<CitizenReportDto>> CreateReport(
         [FromBody] CreateCitizenReportCommand command,
         CancellationToken cancellationToken)
     {
-        var result = await Mediator.Send(command, cancellationToken);
+        var userId = _currentUserService.UserId;
+        var commandWithUser = command with { ReporterUserId = userId };
+
+        var result = await Mediator.Send(commandWithUser, cancellationToken);
         return CreatedAtAction(nameof(GetReportsByStatus), new { status = result.Status }, result);
     }
 
     [HttpPost("{id:guid}/attachments")]
-    [AllowAnonymous]
     public async Task<ActionResult<ReportAttachmentDto>> UploadAttachment(
         Guid id,
         IFormFile file,

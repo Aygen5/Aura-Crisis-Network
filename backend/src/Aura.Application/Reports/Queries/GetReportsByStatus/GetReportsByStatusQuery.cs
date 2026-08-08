@@ -5,7 +5,11 @@ using MediatR;
 
 namespace Aura.Application.Reports.Queries.GetReportsByStatus;
 
-public record GetReportsByStatusQuery(ReportStatus Status) : IRequest<IReadOnlyList<CitizenReportDto>>;
+public record GetReportsByStatusQuery(
+    ReportStatus Status,
+    string? CurrentUserId = null,
+    bool IsOperatorOrAdmin = false
+) : IRequest<IReadOnlyList<CitizenReportDto>>;
 
 public class GetReportsByStatusQueryHandler : IRequestHandler<GetReportsByStatusQuery, IReadOnlyList<CitizenReportDto>>
 {
@@ -18,7 +22,11 @@ public class GetReportsByStatusQueryHandler : IRequestHandler<GetReportsByStatus
 
     public async Task<IReadOnlyList<CitizenReportDto>> Handle(GetReportsByStatusQuery request, CancellationToken cancellationToken)
     {
-        var reports = await _citizenReportRepository.GetReportsByStatusAsync(request.Status, cancellationToken);
+        var reports = await _citizenReportRepository.GetReportsByStatusAsync(
+            request.Status,
+            request.CurrentUserId,
+            request.IsOperatorOrAdmin,
+            cancellationToken);
 
         return reports.Select(r => new CitizenReportDto(
             r.Id,
@@ -41,7 +49,8 @@ public class GetReportsByStatusQueryHandler : IRequestHandler<GetReportsByStatus
                 a.ContentType,
                 a.FileSizeBytes,
                 a.UploadedAt
-            )).ToList()
+            )).ToList(),
+            r.ReporterUserId
         )).ToList();
     }
 }

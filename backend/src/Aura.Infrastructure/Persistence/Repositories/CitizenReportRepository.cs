@@ -31,6 +31,26 @@ public class CitizenReportRepository : ICitizenReportRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<CitizenReport>> GetReportsByStatusAsync(
+        ReportStatus status,
+        string? currentUserId,
+        bool isOperatorOrAdmin,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _context.CitizenReports
+            .Include(r => r.Attachments)
+            .Where(r => r.Status == status);
+
+        if (!isOperatorOrAdmin)
+        {
+            query = query.Where(r => r.ReporterUserId == currentUserId);
+        }
+
+        return await query
+            .OrderByDescending(r => r.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<CitizenReport>> GetNearbyReportsAsync(GeoPoint location, double radiusInMeters, CancellationToken cancellationToken = default)
     {
         return await _context.CitizenReports
