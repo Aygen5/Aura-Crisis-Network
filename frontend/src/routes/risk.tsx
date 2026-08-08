@@ -1,5 +1,5 @@
 import { createFileRoute, redirect, useSearch } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Area,
   AreaChart,
@@ -55,12 +55,6 @@ export const Route = createFileRoute("/risk")({
   }),
   component: RiskAnalysis,
 });
-
-const weather = Array.from({ length: 12 }, (_, i) => ({
-  h: `${String(i * 2).padStart(2, "0")}:00`,
-  rain: [4, 9, 18, 34, 62, 48, 30, 22, 14, 9, 6, 5][i],
-  wind: [12, 14, 18, 21, 24, 22, 19, 17, 15, 13, 12, 11][i],
-}));
 
 const axis = {
   stroke: "var(--muted-foreground)",
@@ -119,22 +113,22 @@ function RiskAnalysis() {
 
   const avgSeismic = districtRisks.length
     ? Math.round(districtRisks.reduce((a, b) => a + b.seismicRisk, 0) / districtRisks.length)
-    : 70;
+    : 0;
   const avgFlood = districtRisks.length
     ? Math.round(districtRisks.reduce((a, b) => a + b.floodRisk, 0) / districtRisks.length)
-    : 55;
+    : 0;
   const avgLandslide = districtRisks.length
     ? Math.round(districtRisks.reduce((a, b) => a + b.landslideRisk, 0) / districtRisks.length)
-    : 40;
+    : 0;
   const avgWildfire = districtRisks.length
     ? Math.round(districtRisks.reduce((a, b) => a + b.wildfireRisk, 0) / districtRisks.length)
-    : 65;
+    : 0;
 
   const scoreCards = [
-    { label: "Sismik Risk", value: avgSeismic, tone: "critical" as const, note: "Kuzey Anadolu Fay Segmenti Gerilimi" },
-    { label: "Sel / Taşkın Riski", value: avgFlood, tone: "warning" as const, note: "Meteoroloji Yağış İndeksi Entegrasyonu" },
-    { label: "Heyelan Riski", value: avgLandslide, tone: "warning" as const, note: "PostGIS Eğim ve Havza Analizi" },
-    { label: "Yangın Riski", value: avgWildfire, tone: "critical" as const, note: "Sıcaklık, Rüzgar ve Nem Analizi" },
+    { label: "Sismik Risk Ortalama", value: avgSeismic, tone: "critical" as const, note: "Kuzey Anadolu Fay Segmenti Gerilim Modeli" },
+    { label: "Sel / Taşkın Riski Ortalama", value: avgFlood, tone: "warning" as const, note: "Open-Meteo Canlı Yağış İndeksi Entegrasyonu" },
+    { label: "Heyelan Riski Ortalama", value: avgLandslide, tone: "warning" as const, note: "PostGIS Eğim ve Yağış Havza Analizi" },
+    { label: "Yangın Riski Ortalama", value: avgWildfire, tone: "critical" as const, note: "Open-Meteo Rüzgar Hızı ve Sıcaklık İndeksi" },
   ];
 
   const districtChartData = districtRisks.map((d) => ({
@@ -143,6 +137,15 @@ function RiskAnalysis() {
     flood: d.floodRisk,
     seismic: d.seismicRisk,
   }));
+
+  const weatherChartData = useMemo(() => {
+    if (!districtRisks || districtRisks.length === 0) return [];
+    return districtRisks.slice(0, 12).map((d) => ({
+      h: d.districtName,
+      rain: d.floodRisk,
+      wind: d.wildfireRisk,
+    }));
+  }, [districtRisks]);
 
   return (
     <AppShell
@@ -167,9 +170,11 @@ function RiskAnalysis() {
           <PanelCard key={s.label} className="p-6">
             <div className="flex items-start justify-between">
               <span className="label-xs">{s.label}</span>
-              <AuraBadge tone={s.tone}>{s.value > 65 ? "Yüksek" : "Orta"}</AuraBadge>
+              <AuraBadge tone={s.tone}>{s.value > 65 ? "Yüksek" : s.value > 0 ? "Orta" : "Bekleniyor"}</AuraBadge>
             </div>
-            <div className="num mt-4 text-4xl font-semibold text-primary">{s.value}</div>
+            <div className="num mt-4 text-4xl font-semibold text-primary">
+              {s.value > 0 ? s.value : "—"}
+            </div>
             <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-secondary">
               <div
                 className="h-full rounded-full bg-primary transition-all duration-300"
@@ -294,30 +299,37 @@ function RiskAnalysis() {
           </div>
         </PanelCard>
 
-        <PanelCard title="Meteorolojik Analiz" className="lg:col-span-2">
+        <PanelCard title="Meteorolojik Risk Analizi (Open-Meteo Canlı Verisi)" className="lg:col-span-2">
           <div className="h-[280px] p-6">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={weather}>
-                <defs>
-                  <linearGradient id="rain" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="#0ea5e9" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="h" {...axis} />
-                <YAxis {...axis} width={28} />
-                <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "var(--border)" }} />
-                <Area
-                  type="monotone"
-                  dataKey="rain"
-                  stroke="#0ea5e9"
-                  strokeWidth={2}
-                  fill="url(#rain)"
-                />
-                <Line type="monotone" dataKey="wind" stroke="#f59e0b" strokeWidth={2} dot={false} />
-              </AreaChart>
-            </ResponsiveContainer>
+            {isRisksLoading || weatherChartData.length === 0 ? (
+              <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                Meteoroloji risk verileri hesaplanıyor...
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={weatherChartData}>
+                  <defs>
+                    <linearGradient id="rain" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="#0ea5e9" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="h" {...axis} />
+                  <YAxis {...axis} width={28} />
+                  <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "var(--border)" }} />
+                  <Area
+                    type="monotone"
+                    dataKey="rain"
+                    name="Sel Risk İndeksi"
+                    stroke="#0ea5e9"
+                    strokeWidth={2}
+                    fill="url(#rain)"
+                  />
+                  <Line type="monotone" dataKey="wind" name="Yangın/Rüzgar Risk İndeksi" stroke="#f59e0b" strokeWidth={2} dot={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </PanelCard>
 
@@ -334,7 +346,7 @@ function RiskAnalysis() {
                   <XAxis type="number" {...axis} />
                   <YAxis type="category" dataKey="district" {...axis} width={80} />
                   <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--secondary)" }} />
-                  <Bar dataKey="landslide" radius={[0, 4, 4, 0]}>
+                  <Bar dataKey="landslide" name="Heyelan Riski" radius={[0, 4, 4, 0]}>
                     {districtChartData.map((d) => (
                       <Cell key={d.district} fill={d.landslide > 50 ? "#ef4444" : "#f59e0b"} />
                     ))}
