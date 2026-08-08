@@ -328,7 +328,7 @@ export const VehicleMarker = memo(function VehicleMarker({
       onClick={handleClick}
       style={{ left: leftPos, top: topPos }}
       className={cn(
-        "pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ease-out z-40",
+        "pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ease-out z-25",
         selected ? "scale-125 ring-2 ring-white" : "hover:scale-110"
       )}
     >

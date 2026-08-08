@@ -376,7 +376,7 @@ function CommandCenter() {
         />
       </div>
 
-      <aside className="absolute bottom-28 left-6 top-[76px] z-30 flex w-[352px] flex-col overflow-hidden rounded-xl glass animate-fade-in">
+      <aside className="absolute bottom-28 left-6 top-[76px] z-40 flex w-[352px] flex-col overflow-hidden rounded-xl glass animate-fade-in">
         <header className="flex items-center justify-between border-b border-white/8 px-4 py-3.5">
           <div className="flex items-center gap-2">
             <StatusDot tone="online" />
@@ -394,20 +394,16 @@ function CommandCenter() {
                 key={e.id}
                 onClick={() => setSelected(e.id)}
                 className={cn(
-                  "flex w-full items-start gap-3 rounded-lg p-2.5 text-left transition-all duration-200",
+                  "flex w-full items-start gap-2.5 rounded-lg p-2.5 text-left transition-all duration-200",
                   isSel
                     ? "bg-foreground/10 ring-1 ring-white/15"
                     : "hover:bg-foreground/5"
                 )}
               >
                 <span
-                  className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-current/25 bg-background/50"
-                  style={{ color: meta.color }}
-                >
-                  <span className="h-4 w-4">
-                    <DisasterIcon type={e.type} />
-                  </span>
-                </span>
+                  className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: meta.color }}
+                />
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center justify-between gap-2">
                     <span className="truncate text-[13px] font-medium">{e.title}</span>
@@ -431,7 +427,7 @@ function CommandCenter() {
         </div>
       </aside>
 
-      <div className="absolute bottom-28 right-6 top-[76px] z-30 flex w-[300px] max-h-[calc(100vh-160px)] flex-col gap-3 overflow-y-auto scroll-slim pr-1">
+      <div className="absolute bottom-28 right-6 top-[76px] z-40 flex w-[300px] max-h-[calc(100vh-160px)] flex-col gap-3 overflow-y-auto scroll-slim pr-1">
         {clickPoint && nearestUnits.length > 0 && (
           <section className="glass rounded-xl p-4 animate-slide-in">
             <div className="flex items-center justify-between border-b border-white/10 pb-2">
