@@ -14,7 +14,8 @@ type Props = {
 export function VehicleDetailDrawer({ unit, events = [], onClose }: Props) {
   const dispatchMutation = useDispatchUnit();
   const { user } = useAuth();
-  const canDispatch = user?.role === "Operator" || user?.role === "Admin";
+  const userRoles = user?.roles || [];
+  const canDispatch = userRoles.includes("Operator") || userRoles.includes("Admin");
 
   if (!unit) return null;
 
@@ -114,24 +115,34 @@ export function VehicleDetailDrawer({ unit, events = [], onClose }: Props) {
           </div>
         </div>
 
-        {canDispatch && events.length > 0 && unit.status === "Available" && (
+        {canDispatch && (
           <div className="mt-4 border-t border-white/10 pt-3">
             <span className="block mb-2 font-semibold text-[11px] uppercase tracking-wider text-muted-foreground">
               Afet Olayına Görevlendir
             </span>
-            <div className="max-h-32 overflow-y-auto space-y-1 pr-1 scroll-slim">
-              {events.map((e) => (
-                <button
-                  key={e.id}
-                  onClick={() => handleDispatch(e.id)}
-                  disabled={dispatchMutation.isPending}
-                  className="flex w-full items-center justify-between rounded-md bg-foreground/5 px-2.5 py-1.5 text-left text-[11px] hover:bg-primary/20 hover:text-primary transition-colors"
-                >
-                  <span className="truncate font-medium">{e.title} ({e.district})</span>
-                  <span className="text-[10px] font-bold text-amber-400">Atama Yap →</span>
-                </button>
-              ))}
-            </div>
+            {unit.status !== "Available" ? (
+              <p className="text-[11px] text-amber-400/90">
+                Bu araç şu anda {statusLabels[unit.status].toLowerCase()} modundadır.
+              </p>
+            ) : events.length === 0 ? (
+              <p className="text-[11px] text-muted-foreground">
+                Görevlendirilecek aktif afet olayı bulunmamaktadır.
+              </p>
+            ) : (
+              <div className="max-h-32 overflow-y-auto space-y-1 pr-1 scroll-slim">
+                {events.map((e) => (
+                  <button
+                    key={e.id}
+                    onClick={() => handleDispatch(e.id)}
+                    disabled={dispatchMutation.isPending}
+                    className="flex w-full items-center justify-between rounded-md bg-foreground/5 px-2.5 py-1.5 text-left text-[11px] hover:bg-primary/20 hover:text-primary transition-colors"
+                  >
+                    <span className="truncate font-medium">{e.title} ({e.district})</span>
+                    <span className="text-[10px] font-bold text-amber-400">Atama Yap →</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
