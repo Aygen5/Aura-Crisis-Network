@@ -22,7 +22,8 @@ import { TopNav } from "@/components/aura/AppShell";
 import { AuraBadge, StatCard, StatusDot } from "@/components/aura/primitives";
 import { CreateReportModal } from "@/components/aura/CreateReportModal";
 import { VehicleDetailDrawer } from "@/components/aura/VehicleDetailDrawer";
-import { useActiveEvents } from "@/queries/useEventsQuery";
+import { HasRole } from "@/components/aura/HasRole";
+import { useActiveEvents, useEscalateEvent } from "@/queries/useEventsQuery";
 import { useAnalyticsSummary } from "@/queries/useAnalyticsQuery";
 import { useClusteredMarkers } from "@/queries/useGisTilesQuery";
 import { useEmergencyUnits, useNearestEmergencyUnits } from "@/queries/useEmergencyUnitsQuery";
@@ -138,6 +139,7 @@ function CommandCenter() {
   const { data: events = [] } = useActiveEvents();
   const { data: summary } = useAnalyticsSummary();
   const { data: units = [] } = useEmergencyUnits();
+  const escalateMutation = useEscalateEvent();
 
   // 1. Filter events by selected time window (24 Hours, 72 Hours, 7 Days)
   const windowedEvents = useMemo(() => {
@@ -810,6 +812,16 @@ function CommandCenter() {
                 >
                   Kapat
                 </button>
+                <HasRole roles={["Operator", "Admin"]}>
+                  <button
+                    onClick={() => escalateMutation.mutate(selectedEvent.id)}
+                    disabled={escalateMutation.isPending}
+                    className="flex h-9 items-center gap-1.5 rounded-lg bg-red-600 px-3.5 text-[13px] font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+                  >
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    {escalateMutation.isPending ? "Yükseltiliyor..." : "Seviyeyi Yükselt"}
+                  </button>
+                </HasRole>
                 <Link
                   to="/event/$id"
                   params={{ id: selectedEvent.id }}

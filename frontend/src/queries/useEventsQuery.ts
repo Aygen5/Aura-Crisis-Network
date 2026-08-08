@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { eventsService } from "@/services";
 import { QUERY_KEYS, QUERY_CACHE_TTL } from "@/constants";
 
@@ -27,6 +28,10 @@ export function useEscalateEvent() {
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.all });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.detail(id) });
+      toast.success("Afet alarm seviyesi başarıyla yükseltildi.");
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Afet seviyesi yükseltilemedi. Lütfen yetkinizi kontrol ediniz.");
     },
   });
 }
