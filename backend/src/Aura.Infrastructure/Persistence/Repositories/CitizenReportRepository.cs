@@ -37,16 +37,14 @@ public class CitizenReportRepository : ICitizenReportRepository
         bool isOperatorOrAdmin,
         CancellationToken cancellationToken = default)
     {
-        var query = _context.CitizenReports
-            .Include(r => r.Attachments)
-            .Where(r => r.Status == status);
-
-        if (!isOperatorOrAdmin)
+        if (string.IsNullOrEmpty(currentUserId))
         {
-            query = query.Where(r => r.ReporterUserId == currentUserId || r.ReporterUserId == null);
+            return Array.Empty<CitizenReport>();
         }
 
-        return await query
+        return await _context.CitizenReports
+            .Include(r => r.Attachments)
+            .Where(r => r.Status == status && r.ReporterUserId == currentUserId)
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync(cancellationToken);
     }

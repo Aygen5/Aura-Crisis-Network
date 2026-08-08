@@ -58,9 +58,13 @@ export function onEventCreated(callback: (event: EventDto) => void): () => void 
   const conn = getSignalRConnection();
   const handler = (data: EventDto) => callback(data);
   conn.on("ReceiveEventCreated", handler);
+  conn.on("receiveEventCreated", handler);
+  conn.on("receiveeventcreated", handler);
 
   return () => {
     conn.off("ReceiveEventCreated", handler);
+    conn.off("receiveEventCreated", handler);
+    conn.off("receiveeventcreated", handler);
   };
 }
 
@@ -68,9 +72,13 @@ export function onReportStatusChanged(callback: (report: CitizenReportDto) => vo
   const conn = getSignalRConnection();
   const handler = (data: CitizenReportDto) => callback(data);
   conn.on("ReceiveReportStatusChanged", handler);
+  conn.on("receiveReportStatusChanged", handler);
+  conn.on("receivereportstatuschanged", handler);
 
   return () => {
     conn.off("ReceiveReportStatusChanged", handler);
+    conn.off("receiveReportStatusChanged", handler);
+    conn.off("receivereportstatuschanged", handler);
   };
 }
 
@@ -78,8 +86,12 @@ export function onVehiclePositionUpdated(callback: (unit: EmergencyUnitDto) => v
   const conn = getVehiclesSignalRConnection();
   const handler = (data: EmergencyUnitDto) => callback(data);
   conn.on("VehiclePositionUpdated", handler);
+  conn.on("vehiclePositionUpdated", handler);
+  conn.on("vehiclepositionupdated", handler);
 
   return () => {
     conn.off("VehiclePositionUpdated", handler);
+    conn.off("vehiclePositionUpdated", handler);
+    conn.off("vehiclepositionupdated", handler);
   };
 }

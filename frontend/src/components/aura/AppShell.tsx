@@ -95,39 +95,22 @@ export function TopNav({ floating = false }: { floating?: boolean }) {
       <AuraLogo />
 
       <nav className="hidden items-center gap-1 lg:flex">
-        {headerItems.map((item) => {
-          const active = item.route === "/" ? pathname === "/" : pathname.startsWith(item.route);
-          if (!isHydrated) {
-            return (
-              <a
-                key={item.id}
-                href={item.route}
-                className={cn(
-                  "rounded-md px-3 py-1.5 text-[13px] transition-colors duration-200",
-                  active
-                    ? "bg-secondary text-foreground"
-                    : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                )}
-              >
-                {item.title}
-              </a>
-            );
-          }
-          return (
-            <Link
-              key={item.id}
-              to={item.route}
-              className={cn(
-                "rounded-md px-3 py-1.5 text-[13px] transition-colors duration-200",
-                active
-                  ? "bg-secondary text-foreground"
-                  : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-              )}
-            >
-              {item.title}
-            </Link>
-          );
-        })}
+        {headerItems.map((item) => (
+          <Link
+            key={item.id}
+            to={item.route}
+            activeOptions={{ exact: item.route === "/" }}
+            activeProps={{
+              className: "bg-secondary text-foreground",
+            }}
+            inactiveProps={{
+              className: "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+            }}
+            className="rounded-md px-3 py-1.5 text-[13px] transition-colors duration-200"
+          >
+            {item.title}
+          </Link>
+        ))}
       </nav>
 
       <div className="ml-auto flex items-center gap-3">
