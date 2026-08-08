@@ -83,38 +83,107 @@ function Analytics() {
   const { data: rejectedReports = [] } = useReportsByStatus("Rejected");
   const { data: emergencyUnits = [] } = useEmergencyUnits();
 
-  // Dynamic Volume Calculation from real events and reports
+  // Dynamic Volume Calculation from real events and reports based on selected range (Günlük / Haftalık / Aylık)
   const volumeData = useMemo(() => {
-    const days = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
-    const map = new Map<string, { t: string; earthquake: number; flood: number; wildfire: number; report: number }>();
-    days.forEach((d) => map.set(d, { t: d, earthquake: 0, flood: 0, wildfire: 0, report: 0 }));
-
-    events.forEach((ev) => {
-      const date = new Date(ev.detectedAt);
-      const dayIndex = (date.getDay() + 6) % 7;
-      const dayName = days[dayIndex];
-      const entry = map.get(dayName);
-      if (entry) {
-        if (ev.type === "Earthquake") entry.earthquake += 1;
-        else if (ev.type === "Flood") entry.flood += 1;
-        else if (ev.type === "Wildfire") entry.wildfire += 1;
-        else entry.report += 1;
-      }
-    });
-
     const allReports = [...pendingReports, ...verifiedReports, ...rejectedReports];
-    allReports.forEach((r) => {
-      const date = new Date(r.createdAt);
-      const dayIndex = (date.getDay() + 6) % 7;
-      const dayName = days[dayIndex];
-      const entry = map.get(dayName);
-      if (entry) {
-        entry.report += 1;
-      }
-    });
 
-    return Array.from(map.values());
-  }, [events, pendingReports, verifiedReports, rejectedReports]);
+    if (range === "Günlük") {
+      const slots = [
+        { t: "00:00", start: 0, end: 4 },
+        { t: "04:00", start: 4, end: 8 },
+        { t: "08:00", start: 8, end: 12 },
+        { t: "12:00", start: 12, end: 16 },
+        { t: "16:00", start: 16, end: 20 },
+        { t: "20:00", start: 20, end: 24 },
+      ];
+      const map = new Map<string, { t: string; earthquake: number; flood: number; wildfire: number; report: number }>();
+      slots.forEach((s) => map.set(s.t, { t: s.t, earthquake: 0, flood: 0, wildfire: 0, report: 0 }));
+
+      events.forEach((ev) => {
+        const date = new Date(ev.detectedAt);
+        const hour = date.getHours();
+        const slot = slots.find((s) => hour >= s.start && hour < s.end);
+        if (slot) {
+          const entry = map.get(slot.t);
+          if (entry) {
+            if (ev.type === "Earthquake") entry.earthquake += 1;
+            else if (ev.type === "Flood") entry.flood += 1;
+            else if (ev.type === "Wildfire") entry.wildfire += 1;
+            else entry.report += 1;
+          }
+        }
+      });
+
+      allReports.forEach((r) => {
+        const date = new Date(r.createdAt);
+        const hour = date.getHours();
+        const slot = slots.find((s) => hour >= s.start && hour < s.end);
+        if (slot) {
+          const entry = map.get(slot.t);
+          if (entry) entry.report += 1;
+        }
+      });
+
+      return Array.from(map.values());
+    } else if (range === "Aylık") {
+      const weeks = ["Hafta 1", "Hafta 2", "Hafta 3", "Hafta 4"];
+      const map = new Map<string, { t: string; earthquake: number; flood: number; wildfire: number; report: number }>();
+      weeks.forEach((w) => map.set(w, { t: w, earthquake: 0, flood: 0, wildfire: 0, report: 0 }));
+
+      events.forEach((ev) => {
+        const date = new Date(ev.detectedAt);
+        const dayOfMonth = date.getDate();
+        const weekIndex = Math.min(3, Math.floor((dayOfMonth - 1) / 7));
+        const weekName = weeks[weekIndex];
+        const entry = map.get(weekName);
+        if (entry) {
+          if (ev.type === "Earthquake") entry.earthquake += 1;
+          else if (ev.type === "Flood") entry.flood += 1;
+          else if (ev.type === "Wildfire") entry.wildfire += 1;
+          else entry.report += 1;
+        }
+      });
+
+      allReports.forEach((r) => {
+        const date = new Date(r.createdAt);
+        const dayOfMonth = date.getDate();
+        const weekIndex = Math.min(3, Math.floor((dayOfMonth - 1) / 7));
+        const weekName = weeks[weekIndex];
+        const entry = map.get(weekName);
+        if (entry) entry.report += 1;
+      });
+
+      return Array.from(map.values());
+    } else {
+      // Default: Haftalık
+      const days = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+      const map = new Map<string, { t: string; earthquake: number; flood: number; wildfire: number; report: number }>();
+      days.forEach((d) => map.set(d, { t: d, earthquake: 0, flood: 0, wildfire: 0, report: 0 }));
+
+      events.forEach((ev) => {
+        const date = new Date(ev.detectedAt);
+        const dayIndex = (date.getDay() + 6) % 7;
+        const dayName = days[dayIndex];
+        const entry = map.get(dayName);
+        if (entry) {
+          if (ev.type === "Earthquake") entry.earthquake += 1;
+          else if (ev.type === "Flood") entry.flood += 1;
+          else if (ev.type === "Wildfire") entry.wildfire += 1;
+          else entry.report += 1;
+        }
+      });
+
+      allReports.forEach((r) => {
+        const date = new Date(r.createdAt);
+        const dayIndex = (date.getDay() + 6) % 7;
+        const dayName = days[dayIndex];
+        const entry = map.get(dayName);
+        if (entry) entry.report += 1;
+      });
+
+      return Array.from(map.values());
+    }
+  }, [range, events, pendingReports, verifiedReports, rejectedReports]);
 
   // Dynamic Response Time Trend calculation per fleet division
   const responseData = useMemo(() => {
