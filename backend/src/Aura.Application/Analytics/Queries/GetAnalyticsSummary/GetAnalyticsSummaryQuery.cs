@@ -6,11 +6,7 @@ using MediatR;
 
 namespace Aura.Application.Analytics.Queries.GetAnalyticsSummary;
 
-public record GetAnalyticsSummaryQuery() : IRequest<AnalyticsSummaryDto>, ICacheableRequest
-{
-    public string CacheKey => "analytics:summary";
-    public TimeSpan? Expiration => TimeSpan.FromMinutes(5);
-}
+public record GetAnalyticsSummaryQuery() : IRequest<AnalyticsSummaryDto>;
 
 public class GetAnalyticsSummaryQueryHandler : IRequestHandler<GetAnalyticsSummaryQuery, AnalyticsSummaryDto>
 {
@@ -39,11 +35,14 @@ public class GetAnalyticsSummaryQueryHandler : IRequestHandler<GetAnalyticsSumma
         double maxMagnitude = 0;
         foreach (var ev in activeEvents)
         {
-            if (double.TryParse(ev.Metric, NumberStyles.Any, CultureInfo.InvariantCulture, out var mag))
+            if (ev.Type == DisasterType.Earthquake || ev.Source == "Kandilli" || (ev.MetricLabel != null && ev.MetricLabel.Contains("ML")))
             {
-                if (mag > maxMagnitude)
+                if (double.TryParse(ev.Metric, NumberStyles.Any, CultureInfo.InvariantCulture, out var mag))
                 {
-                    maxMagnitude = mag;
+                    if (mag > maxMagnitude)
+                    {
+                        maxMagnitude = mag;
+                    }
                 }
             }
         }

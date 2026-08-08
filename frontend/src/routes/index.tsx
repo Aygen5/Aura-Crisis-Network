@@ -366,7 +366,11 @@ function CommandCenter() {
         <StatCard
           className="pointer-events-auto"
           label="Max Büyüklük"
-          value={summary ? `${summary.highestEarthquakeMagnitude.toFixed(1)} ML` : "0.0 ML"}
+          value={
+            summary && summary.highestEarthquakeMagnitude > 0
+              ? `${summary.highestEarthquakeMagnitude.toFixed(1)} ML`
+              : "Bekleniyor"
+          }
           tone="critical"
           delta="Kandilli Akışı"
           icon={<AlertTriangle className="h-3.5 w-3.5" />}
