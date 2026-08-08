@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   Activity,
   AlertTriangle,
+  Bell,
   ChevronRight,
   FileWarning,
   Layers,
@@ -129,6 +130,10 @@ function CommandCenter() {
   const [notes, setNotes] = useState<NotificationItem[]>([]);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(10);
+  const [isEventFeedOpen, setIsEventFeedOpen] = useState(true);
+  const [isFleetOpen, setIsFleetOpen] = useState(true);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(true);
+  const [isLayersOpen, setIsLayersOpen] = useState(true);
 
   const { data: events = [] } = useActiveEvents();
   const { data: summary } = useAnalyticsSummary();
@@ -376,58 +381,113 @@ function CommandCenter() {
         />
       </div>
 
-      <aside className="absolute bottom-28 left-6 top-[76px] z-40 flex w-[352px] flex-col overflow-hidden rounded-xl glass animate-fade-in">
-        <header className="flex items-center justify-between border-b border-white/8 px-4 py-3.5">
-          <div className="flex items-center gap-2">
-            <StatusDot tone="online" />
-            <h2 className="text-[13px] font-semibold">Canlı Olay Akışı</h2>
-          </div>
-          <span className="num text-[11px] text-muted-foreground">{displayEvents.length} olay</span>
-        </header>
-
-        <div className="scroll-slim flex-1 overflow-y-auto p-2">
-          {displayEvents.map((e) => {
-            const meta = disasterMeta[e.type] ?? disasterMeta.Earthquake;
-            const isSel = selectedId === e.id;
-            return (
+      {isEventFeedOpen ? (
+        <aside className="absolute bottom-28 left-6 top-[76px] z-40 flex w-[352px] flex-col overflow-hidden rounded-xl glass animate-fade-in">
+          <header className="flex items-center justify-between border-b border-white/8 px-4 py-3.5">
+            <div className="flex items-center gap-2">
+              <StatusDot tone="online" />
+              <h2 className="text-[13px] font-semibold">Canlı Olay Akışı</h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="num text-[11px] text-muted-foreground">{displayEvents.length} olay</span>
               <button
-                key={e.id}
-                onClick={() => setSelected(e.id)}
-                className={cn(
-                  "flex w-full items-start gap-2.5 rounded-lg p-2.5 text-left transition-all duration-200",
-                  isSel
-                    ? "bg-foreground/10 ring-1 ring-white/15"
-                    : "hover:bg-foreground/5"
-                )}
+                onClick={() => setIsEventFeedOpen(false)}
+                className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+                title="Paneli Kapat"
               >
-                <span
-                  className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: meta.color }}
-                />
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center justify-between gap-2">
-                    <span className="truncate text-[13px] font-medium">{e.title}</span>
-                    <span className="num shrink-0 text-[11px] text-muted-foreground">
-                      {new Date(e.detectedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                  </span>
-                  <span className="mt-0.5 block truncate text-[12px] text-muted-foreground">
-                    {e.district}, {e.locationName}
-                  </span>
-                  <span className="mt-2 flex items-center gap-2">
-                    <span className="num text-[12px] font-semibold text-primary">
-                      {e.metric} {e.metricLabel}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground">· {e.source}</span>
-                  </span>
-                </span>
+                <X className="h-3.5 w-3.5" />
               </button>
-            );
-          })}
-        </div>
-      </aside>
+            </div>
+          </header>
+
+          <div className="scroll-slim flex-1 overflow-y-auto p-2">
+            {displayEvents.map((e) => {
+              const meta = disasterMeta[e.type] ?? disasterMeta.Earthquake;
+              const isSel = selectedId === e.id;
+              return (
+                <button
+                  key={e.id}
+                  onClick={() => setSelected(e.id)}
+                  className={cn(
+                    "flex w-full items-start gap-2.5 rounded-lg p-2.5 text-left transition-all duration-200",
+                    isSel
+                      ? "bg-foreground/10 ring-1 ring-white/15"
+                      : "hover:bg-foreground/5"
+                  )}
+                >
+                  <span
+                    className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: meta.color }}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="truncate text-[13px] font-medium">{e.title}</span>
+                      <span className="num shrink-0 text-[11px] text-muted-foreground">
+                        {new Date(e.detectedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </span>
+                    <span className="mt-0.5 block truncate text-[12px] text-muted-foreground">
+                      {e.district}, {e.locationName}
+                    </span>
+                    <span className="mt-2 flex items-center gap-2">
+                      <span className="num text-[12px] font-semibold text-primary">
+                        {e.metric} {e.metricLabel}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">· {e.source}</span>
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </aside>
+      ) : (
+        <button
+          onClick={() => setIsEventFeedOpen(true)}
+          className="glass absolute left-6 top-[76px] z-40 flex items-center gap-2 rounded-xl border border-white/10 px-3.5 py-2.5 text-xs font-semibold shadow-2xl backdrop-blur-xl transition-all hover:bg-foreground/10 animate-fade-in"
+          title="Canlı Olay Akışını Göster"
+        >
+          <Activity className="h-4 w-4 text-critical" />
+          <span>Canlı Olay Akışı</span>
+          <span className="num rounded-full bg-critical/20 px-2 py-0.5 text-[10px] font-bold text-critical">
+            {displayEvents.length}
+          </span>
+        </button>
+      )}
 
       <div className="absolute bottom-28 right-6 top-[76px] z-40 flex w-[300px] max-h-[calc(100vh-160px)] flex-col gap-3 overflow-y-auto scroll-slim pr-1">
+        {(!isFleetOpen || !isNotificationsOpen || !isLayersOpen) && (
+          <div className="flex flex-wrap items-center justify-end gap-1.5 self-end">
+            {!isFleetOpen && (
+              <button
+                onClick={() => setIsFleetOpen(true)}
+                className="glass flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] font-semibold shadow-lg backdrop-blur-md hover:bg-foreground/10 transition-colors animate-fade-in"
+              >
+                <Truck className="h-3.5 w-3.5 text-primary" />
+                <span>Saha Filosu ({units.length})</span>
+              </button>
+            )}
+            {!isNotificationsOpen && (
+              <button
+                onClick={() => setIsNotificationsOpen(true)}
+                className="glass flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] font-semibold shadow-lg backdrop-blur-md hover:bg-foreground/10 transition-colors animate-fade-in"
+              >
+                <Bell className="h-3.5 w-3.5 text-amber-400" />
+                <span>Bildirimler</span>
+              </button>
+            )}
+            {!isLayersOpen && (
+              <button
+                onClick={() => setIsLayersOpen(true)}
+                className="glass flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] font-semibold shadow-lg backdrop-blur-md hover:bg-foreground/10 transition-colors animate-fade-in"
+              >
+                <Layers className="h-3.5 w-3.5 text-primary" />
+                <span>Katmanlar</span>
+              </button>
+            )}
+          </div>
+        )}
+
         {clickPoint && nearestUnits.length > 0 && (
           <section className="glass rounded-xl p-4 animate-slide-in">
             <div className="flex items-center justify-between border-b border-white/10 pb-2">
@@ -461,121 +521,154 @@ function CommandCenter() {
           </section>
         )}
 
-        <section className="glass rounded-xl p-4 animate-fade-in">
-          <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
-            <div className="flex items-center gap-2">
-              <Truck className="h-4 w-4 text-primary" />
-              <h2 className="text-[13px] font-semibold tracking-tight">Saha Filo Takibi</h2>
-            </div>
-            <AuraBadge tone="online">{units.length} Araç Aktif</AuraBadge>
-          </div>
-
-          <div className="mt-3 space-y-1.5 max-h-44 overflow-y-auto scroll-slim pr-1">
-            {units.length === 0 ? (
-              <div className="py-4 text-center text-[12px] text-muted-foreground">
-                Sahada aktif araç bulunmamaktadır.
+        {isFleetOpen && (
+          <section className="glass rounded-xl p-4 animate-fade-in">
+            <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+              <div className="flex items-center gap-2">
+                <Truck className="h-4 w-4 text-primary" />
+                <h2 className="text-[13px] font-semibold tracking-tight">Saha Filo Takibi</h2>
               </div>
-            ) : (
-              units.map((u) => (
+              <div className="flex items-center gap-2">
+                <AuraBadge tone="online">{units.length} Araç Aktif</AuraBadge>
                 <button
-                  key={u.id}
-                  onClick={() => setSelectedUnit(u)}
-                  className="flex w-full items-center justify-between rounded-lg border border-white/5 bg-foreground/5 p-2 text-left text-xs transition-colors hover:bg-foreground/10"
+                  onClick={() => setIsFleetOpen(false)}
+                  className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+                  title="Kartı Kapat"
                 >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-foreground truncate">{u.callSign}</span>
-                      <span className="text-[10px] text-muted-foreground font-mono">{u.plateNumber}</span>
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-3 space-y-1.5 max-h-44 overflow-y-auto scroll-slim pr-1">
+              {units.length === 0 ? (
+                <div className="py-4 text-center text-[12px] text-muted-foreground">
+                  Sahada aktif araç bulunmamaktadır.
+                </div>
+              ) : (
+                units.map((u) => (
+                  <button
+                    key={u.id}
+                    onClick={() => setSelectedUnit(u)}
+                    className="flex w-full items-center justify-between rounded-lg border border-white/5 bg-foreground/5 p-2 text-left text-xs transition-colors hover:bg-foreground/10"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-foreground truncate">{u.callSign}</span>
+                        <span className="text-[10px] text-muted-foreground font-mono">{u.plateNumber}</span>
+                      </div>
+                      <span className="block text-[10px] text-muted-foreground truncate">
+                        {u.type === "SearchAndRescue"
+                          ? "AFAD Arama Kurtarma"
+                          : u.type === "Ambulance"
+                          ? "UMKE / 112 Ambulans"
+                          : u.type === "FireEngine"
+                          ? "İtfaiye Arazöz"
+                          : "Polis / Devriye"}
+                      </span>
                     </div>
-                    <span className="block text-[10px] text-muted-foreground truncate">
-                      {u.type === "SearchAndRescue"
-                        ? "AFAD Arama Kurtarma"
-                        : u.type === "Ambulance"
-                        ? "UMKE / 112 Ambulans"
-                        : u.type === "FireEngine"
-                        ? "İtfaiye Arazöz"
-                        : "Polis / Devriye"}
+                    <span
+                      className={cn(
+                        "shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase border",
+                        u.status === "Available"
+                          ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                          : "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                      )}
+                    >
+                      {u.status === "Available" ? "Müsait" : "Görevde"}
                     </span>
+                  </button>
+                ))
+              )}
+            </div>
+          </section>
+        )}
+
+        {isNotificationsOpen && (
+          <section className="glass flex flex-1 flex-col overflow-hidden rounded-xl p-4 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[13px] font-semibold">Canlı Bildirimler</h2>
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/notifications"
+                  className="flex items-center gap-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+                >
+                  Tüm Bildirimler <ChevronRight className="h-3 w-3" />
+                </Link>
+                <button
+                  onClick={() => setIsNotificationsOpen(false)}
+                  className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+                  title="Kartı Kapat"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="scroll-slim mt-3 flex-1 space-y-2 overflow-y-auto pr-1">
+              {notes.length === 0 && (
+                <div className="py-8 text-center text-[12px] text-muted-foreground">
+                  Henüz anlık bir bildiriminiz bulunmamaktadır.
+                </div>
+              )}
+              {notes.map((n) => (
+                <article
+                  key={n.id}
+                  className="animate-slide-in rounded-lg border border-white/8 bg-foreground/[0.03] p-3"
+                >
+                  <div className="flex items-start gap-2">
+                    <StatusDot tone={n.tone} className="mt-1.5" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[12px] font-medium">{n.title}</p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">{n.body}</p>
+                    </div>
                   </div>
-                  <span
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {isLayersOpen && (
+          <section className="glass rounded-xl p-3">
+            <div className="mb-2 flex items-center justify-between px-1">
+              <div className="flex items-center gap-2">
+                <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="label-xs">Harita Katmanları</span>
+              </div>
+              <button
+                onClick={() => setIsLayersOpen(false)}
+                className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+                title="Kartı Kapat"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {mapLayers.map((l) => {
+                const on = active[l.key];
+                return (
+                  <button
+                    key={l.key}
+                    onClick={() => handleToggle(l.key)}
                     className={cn(
-                      "shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase border",
-                      u.status === "Available"
-                        ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                        : "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                      "flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-all duration-200",
+                      on
+                        ? "bg-foreground/10 text-foreground shadow-sm"
+                        : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
                     )}
                   >
-                    {u.status === "Available" ? "Müsait" : "Görevde"}
-                  </span>
-                </button>
-              ))
-            )}
-          </div>
-        </section>
-
-        <section className="glass flex flex-1 flex-col overflow-hidden rounded-xl p-4 animate-fade-in">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[13px] font-semibold">Canlı Bildirimler</h2>
-            <Link
-              to="/notifications"
-              className="flex items-center gap-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground"
-            >
-              Tüm Bildirimler <ChevronRight className="h-3 w-3" />
-            </Link>
-          </div>
-
-          <div className="scroll-slim mt-3 flex-1 space-y-2 overflow-y-auto pr-1">
-            {notes.length === 0 && (
-              <div className="py-8 text-center text-[12px] text-muted-foreground">
-                Henüz anlık bir bildiriminiz bulunmamaktadır.
-              </div>
-            )}
-            {notes.map((n) => (
-              <article
-                key={n.id}
-                className="animate-slide-in rounded-lg border border-white/8 bg-foreground/[0.03] p-3"
-              >
-                <div className="flex items-start gap-2">
-                  <StatusDot tone={n.tone} className="mt-1.5" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[12px] font-medium">{n.title}</p>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">{n.body}</p>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="glass rounded-xl p-3">
-          <div className="mb-2 flex items-center gap-2 px-1">
-            <Layers className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="label-xs">Harita Katmanları</span>
-          </div>
-          <div className="grid grid-cols-2 gap-1.5">
-            {mapLayers.map((l) => {
-              const on = active[l.key];
-              return (
-                <button
-                  key={l.key}
-                  onClick={() => handleToggle(l.key)}
-                  className={cn(
-                    "flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-all duration-200",
-                    on
-                      ? "bg-foreground/10 text-foreground shadow-sm"
-                      : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
-                  )}
-                >
-                  <span className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: l.color }} />
-                    {l.label}
-                  </span>
-                  <span className={cn("h-1.5 w-1.5 rounded-full", on ? "bg-primary" : "bg-border")} />
-                </button>
-              );
-            })}
-          </div>
-        </section>
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: l.color }} />
+                      {l.label}
+                    </span>
+                    <span className={cn("h-1.5 w-1.5 rounded-full", on ? "bg-primary" : "bg-border")} />
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
       </div>
 
       <div className="absolute bottom-6 left-[392px] right-[332px] z-30 flex flex-col gap-2">
