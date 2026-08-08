@@ -7,6 +7,7 @@ import type { AuthResponseDto, LoginUserRequest } from "@/types";
 interface AuthContextType {
   user: AuthResponseDto | null;
   authenticated: boolean;
+  isHydrated: boolean;
   login: (request: LoginUserRequest) => Promise<AuthResponseDto>;
   logout: () => void;
 }
@@ -17,10 +18,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [user, setUser] = useState<AuthResponseDto | null>(() => getStoredAuth());
   const [authenticated, setAuthenticated] = useState<boolean>(() => isAuthenticated());
+  const [isHydrated, setIsHydrated] = useState<boolean>(false);
 
   useEffect(() => {
     setUser(getStoredAuth());
     setAuthenticated(isAuthenticated());
+    setIsHydrated(true);
   }, []);
 
   async function login(request: LoginUserRequest): Promise<AuthResponseDto> {
@@ -38,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, authenticated, login, logout }}>
+    <AuthContext.Provider value={{ user, authenticated, isHydrated, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

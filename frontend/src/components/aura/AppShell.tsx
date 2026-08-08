@@ -167,7 +167,7 @@ export function TopNav({ floating = false }: { floating?: boolean }) {
             <span className="block text-[12px] font-medium">{currentUser?.fullName || "Oturum Açıldı"}</span>
             <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
               <StatusDot pulse={false} className="h-1.5 w-1.5" />
-              {currentUser?.roles?.[0] || "Citizen"}
+              {currentUser?.roles?.[0] || ""}
             </span>
           </span>
           <button
@@ -195,12 +195,13 @@ export function AppShell({
   actions?: ReactNode;
 }) {
   const navigate = useNavigate();
+  const { authenticated } = useAuth();
 
   useEffect(() => {
-    if (!isAuthenticated()) {
+    if (!authenticated) {
       navigate({ to: "/login" });
     }
-  }, [navigate]);
+  }, [authenticated, navigate]);
 
   return (
     <div className="min-h-screen bg-background">

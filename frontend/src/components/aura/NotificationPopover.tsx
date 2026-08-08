@@ -6,7 +6,7 @@ import {
   useMarkNotificationRead,
   useMarkAllNotificationsRead,
 } from "@/queries/useNotificationsQuery";
-import { isAuthenticated } from "@/lib/api-client";
+import { useAuth } from "@/providers/AuthProvider";
 import type { NotificationType } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +20,7 @@ const typeToneMap: Record<NotificationType, { color: string; icon: any }> = {
 export function NotificationPopover() {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const authed = isAuthenticated();
+  const { authenticated } = useAuth();
 
   const { data: notifications = [] } = useUserNotifications(20);
   const unreadCount = notifications.filter((n) => !n.isRead).length;
@@ -37,7 +37,7 @@ export function NotificationPopover() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  if (!authed) {
+  if (!authenticated) {
     return null;
   }
 

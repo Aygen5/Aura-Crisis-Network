@@ -6,7 +6,7 @@ import type { NotificationDto } from "@/types";
 export function useUserNotifications(limit = 20) {
   const user = getStoredAuth();
   const userId = user?.email || user?.fullName || "anonymous";
-  const hasValidAuth = typeof window !== "undefined" && Boolean(user?.accessToken) && isAuthenticated();
+  const hasValidAuth = typeof window !== "undefined" && Boolean(user?.accessToken);
 
   return useQuery<NotificationDto[]>({
     queryKey: ["notifications", userId, limit],
