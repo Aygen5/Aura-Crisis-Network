@@ -158,10 +158,16 @@ export async function httpClient<T>(endpoint: string, options?: RequestInit): Pr
     }
 
     if (response.status === 422 || response.status === 400) {
-      if (errData?.errors && Array.isArray(errData.errors)) {
-        throw new Error(errData.errors.join(" "));
+      if (errData?.errors) {
+        if (Array.isArray(errData.errors)) {
+          throw new Error(errData.errors.join(" "));
+        }
+        if (typeof errData.errors === "object") {
+          const messages = Object.values(errData.errors).flat().join(" ");
+          if (messages) throw new Error(messages);
+        }
       }
-      const msg = errData?.Message || errData?.title || "Girilen veriler doğrulanamadı. Lütfen alanları kontrol ediniz.";
+      const msg = errData?.Message || errData?.title || errData?.detail || "Girilen veriler doğrulanamadı. Lütfen alanları kontrol ediniz.";
       throw new Error(msg);
     }
 

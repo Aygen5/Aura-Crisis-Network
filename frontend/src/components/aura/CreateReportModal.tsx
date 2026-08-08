@@ -72,18 +72,9 @@ export function CreateReportModal({ open, onClose, onSuccess }: CreateReportModa
     setSubmitting(true);
 
     try {
-      const disasterTypeNumericMap: Record<string, number> = {
-        Earthquake: 1,
-        Flood: 2,
-        Wildfire: 3,
-        Landslide: 4,
-        Medical: 5,
-        Report: 6,
-      };
-
       const report = await createCitizenReport({
         title,
-        type: (disasterTypeNumericMap[type] ?? 6) as any,
+        type: type as any,
         district,
         reporterName: reporterName || "Anonim Vatandaş",
         reporterPhone: reporterPhone || "",
