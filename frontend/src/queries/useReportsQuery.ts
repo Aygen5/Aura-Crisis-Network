@@ -1,10 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { reportsService } from "@/services";
+import { getStoredAuth } from "@/lib/api-client";
 import type { CreateReportRequest, ReportStatus } from "@/types";
 
 export function useReportsByStatus(status: ReportStatus = "Pending") {
+  const user = getStoredAuth();
+  const userId = user?.email || user?.fullName || "anonymous";
+
   return useQuery({
-    queryKey: ["reports", status],
+    queryKey: ["reports", userId, status],
     queryFn: () => reportsService.getReportsByStatus(status),
   });
 }

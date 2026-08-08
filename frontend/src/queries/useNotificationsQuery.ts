@@ -4,10 +4,12 @@ import { isAuthenticated, getStoredAuth } from "@/lib/api-client";
 import type { NotificationDto } from "@/types";
 
 export function useUserNotifications(limit = 20) {
-  const hasValidAuth = typeof window !== "undefined" && Boolean(getStoredAuth()?.accessToken) && isAuthenticated();
+  const user = getStoredAuth();
+  const userId = user?.email || user?.fullName || "anonymous";
+  const hasValidAuth = typeof window !== "undefined" && Boolean(user?.accessToken) && isAuthenticated();
 
   return useQuery<NotificationDto[]>({
-    queryKey: ["notifications", limit],
+    queryKey: ["notifications", userId, limit],
     queryFn: () => notificationsService.getMyNotifications(limit),
     enabled: hasValidAuth,
     staleTime: 60000,
