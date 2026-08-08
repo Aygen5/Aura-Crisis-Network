@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowRight, CheckCircle2, Lock, ShieldAlert } from "lucide-react";
 import { StatusDot } from "@/components/aura/primitives";
@@ -11,6 +11,11 @@ type LoginSearch = {
 };
 
 export const Route = createFileRoute("/login")({
+  beforeLoad: () => {
+    if (isAuthenticated()) {
+      throw redirect({ to: "/" });
+    }
+  },
   validateSearch: (search: Record<string, unknown>): LoginSearch => {
     const registered = search.registered === "true" || search.registered === true ? true : undefined;
     const email = search.email ? String(search.email) : undefined;

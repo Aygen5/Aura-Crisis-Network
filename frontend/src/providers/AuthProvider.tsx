@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-import { getStoredAuth, isAuthenticated, clearStoredAuth } from "@/lib/http-client";
+import { useQueryClient } from "@tanstack/react-query";
+import { getStoredAuth, isAuthenticated } from "@/lib/http-client";
 import { authService } from "@/services";
 import type { AuthResponseDto, LoginUserRequest } from "@/types";
 
@@ -13,8 +14,9 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthResponseDto | null>(null);
-  const [authenticated, setAuthenticated] = useState<boolean>(false);
+  const queryClient = useQueryClient();
+  const [user, setUser] = useState<AuthResponseDto | null>(() => getStoredAuth());
+  const [authenticated, setAuthenticated] = useState<boolean>(() => isAuthenticated());
 
   useEffect(() => {
     setUser(getStoredAuth());
@@ -30,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   function logout() {
     authService.logout();
+    queryClient.clear();
     setUser(null);
     setAuthenticated(false);
   }

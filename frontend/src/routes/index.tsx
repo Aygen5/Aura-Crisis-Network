@@ -431,7 +431,7 @@ function CommandCenter() {
         </div>
       </aside>
 
-      <div className="absolute bottom-28 right-6 top-[76px] z-30 flex w-[300px] flex-col gap-3">
+      <div className="absolute bottom-28 right-6 top-[76px] z-30 flex w-[300px] max-h-[calc(100vh-160px)] flex-col gap-3 overflow-y-auto scroll-slim pr-1">
         {clickPoint && nearestUnits.length > 0 && (
           <section className="glass rounded-xl p-4 animate-slide-in">
             <div className="flex items-center justify-between border-b border-white/10 pb-2">

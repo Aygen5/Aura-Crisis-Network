@@ -2,7 +2,8 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, useRef } from "react";
 import { LogOut, Search, ShieldAlert, MapPin } from "lucide-react";
 import { NAVIGATION_CONFIG } from "@/config";
-import { hasAnyRole, clearStoredAuth, getStoredAuth, isAuthenticated, type AuthResponseDto } from "@/lib/api-client";
+import { hasAnyRole, type AuthResponseDto } from "@/lib/api-client";
+import { useAuth } from "@/providers/AuthProvider";
 import { SEARCHABLE_LOCATIONS, geocodeLocation, type SearchableLocation } from "@/lib/geo-turkey";
 import { NotificationPopover } from "./NotificationPopover";
 import { cn } from "@/lib/utils";
@@ -25,15 +26,11 @@ export function AuraLogo({ className }: { className?: string }) {
 export function TopNav({ floating = false }: { floating?: boolean }) {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const [currentUser, setCurrentUser] = useState<AuthResponseDto | null>(null);
+  const { user: currentUser, logout } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setCurrentUser(getStoredAuth());
-  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -46,7 +43,7 @@ export function TopNav({ floating = false }: { floating?: boolean }) {
   }, []);
 
   function handleLogout() {
-    clearStoredAuth();
+    logout();
     navigate({ to: "/login" });
   }
 

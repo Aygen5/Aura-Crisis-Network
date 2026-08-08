@@ -1,6 +1,7 @@
 import { X, Navigation, Gauge, ShieldAlert, CheckCircle2, AlertTriangle, Clock } from "lucide-react";
 import { AuraBadge } from "./primitives";
 import { useDispatchUnit } from "@/queries/useEmergencyUnitsQuery";
+import { useAuth } from "@/providers/AuthProvider";
 import type { EmergencyUnitDto, EventDto } from "@/types";
 import { toast } from "sonner";
 
@@ -12,6 +13,8 @@ type Props = {
 
 export function VehicleDetailDrawer({ unit, events = [], onClose }: Props) {
   const dispatchMutation = useDispatchUnit();
+  const { user } = useAuth();
+  const canDispatch = user?.role === "Operator" || user?.role === "Admin";
 
   if (!unit) return null;
 
@@ -108,7 +111,7 @@ export function VehicleDetailDrawer({ unit, events = [], onClose }: Props) {
           </div>
         </div>
 
-        {events.length > 0 && unit.status === "Available" && (
+        {canDispatch && events.length > 0 && unit.status === "Available" && (
           <div className="mt-4 border-t border-white/10 pt-3">
             <span className="block mb-2 font-semibold text-[11px] uppercase tracking-wider text-muted-foreground">
               Afet Olayına Görevlendir
