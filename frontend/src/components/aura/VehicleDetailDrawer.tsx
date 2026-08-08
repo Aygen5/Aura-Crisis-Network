@@ -47,6 +47,9 @@ export function VehicleDetailDrawer({ unit, events = [], onClose }: Props) {
         onSuccess: () => {
           toast.success(`${unit.callSign} ekibi başarıyla olaya görevlendirildi!`);
         },
+        onError: (err: any) => {
+          toast.error(err?.message || "Araç görevlendirme işlemi başarısız oldu.");
+        },
       }
     );
   }
@@ -129,6 +132,13 @@ export function VehicleDetailDrawer({ unit, events = [], onClose }: Props) {
                 </button>
               ))}
             </div>
+          </div>
+        )}
+
+        {!canDispatch && (
+          <div className="mt-3 flex items-center gap-2 rounded-lg border border-border/30 bg-foreground/5 p-2.5 text-[11px] text-muted-foreground">
+            <ShieldAlert className="h-4 w-4 shrink-0 text-amber-400" />
+            <span>Araç görevlendirme ve atama aksiyonları yalnızca yetkili Operatörler içindir.</span>
           </div>
         )}
       </div>
