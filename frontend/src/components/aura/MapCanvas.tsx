@@ -394,16 +394,30 @@ const DisasterMarker = memo(function DisasterMarker({
 
 const ClusterMarker = memo(function ClusterMarker({
   cluster,
+  events = [],
+  onSelect,
   onClusterSelect,
 }: {
   cluster: MarkerClusterDto;
+  events?: EventDto[];
+  onSelect?: (e: EventDto) => void;
   onClusterSelect?: (cluster: MarkerClusterDto) => void;
 }) {
   if (cluster.pointCount === 1) {
-    const meta = disasterMeta[cluster.primaryDisasterType] || disasterMeta.Earthquake;
+    const realEvent =
+      events.find((e) => e.id === cluster.clusterId) ||
+      events.find((e) => Math.abs(e.latitude - cluster.latitude) < 0.05 && Math.abs(e.longitude - cluster.longitude) < 0.05);
+
+    const meta = disasterMeta[realEvent?.type || cluster.primaryDisasterType] || disasterMeta.Earthquake;
     return (
       <button
-        onClick={() => onClusterSelect?.(cluster)}
+        onClick={() => {
+          if (realEvent) {
+            onSelect?.(realEvent);
+          } else {
+            onClusterSelect?.(cluster);
+          }
+        }}
         style={{
           left: `${Math.max(4, Math.min(96, ((cluster.longitude - 26.0) / 19.0) * 100))}%`,
           top: `${Math.max(4, Math.min(96, ((42.0 - cluster.latitude) / 6.0) * 100))}%`,
@@ -415,7 +429,7 @@ const ClusterMarker = memo(function ClusterMarker({
           style={{ color: meta.color }}
         >
           <span className="h-4 w-4">
-            <DisasterIcon type={cluster.primaryDisasterType} />
+            <DisasterIcon type={realEvent?.type || cluster.primaryDisasterType} />
           </span>
         </span>
       </button>
@@ -522,6 +536,8 @@ export const MapCanvas = memo(function MapCanvas({
               <ClusterMarker
                 key={c.clusterId}
                 cluster={c}
+                events={events}
+                onSelect={onSelect}
                 onClusterSelect={onClusterSelect}
               />
             ))
