@@ -25,8 +25,10 @@ import { useActiveEvents } from "@/queries/useEventsQuery";
 import { useAnalyticsSummary } from "@/queries/useAnalyticsQuery";
 import { useClusteredMarkers } from "@/queries/useGisTilesQuery";
 import { useEmergencyUnits, useNearestEmergencyUnits } from "@/queries/useEmergencyUnitsQuery";
+import { useUserNotifications } from "@/queries/useNotificationsQuery";
 import { disasterMeta, isAuthenticated, type EmergencyUnitDto } from "@/lib/api-client";
 import {
+  startSignalRConnection,
   onEventCreated,
   onReportStatusChanged,
 } from "@/lib/signalr-client";
@@ -224,7 +226,11 @@ function CommandCenter() {
     zoom: zoomLevel,
   });
 
+  const { data: dbNotifications = [] } = useUserNotifications(5);
+
   useEffect(() => {
+    startSignalRConnection();
+
     const unsubEvent = onEventCreated((newEvent) => {
       setNotes((prev) => [
         {
@@ -254,6 +260,18 @@ function CommandCenter() {
       unsubReport();
     };
   }, []);
+
+  useEffect(() => {
+    if (dbNotifications.length > 0 && notes.length === 0) {
+      const initialNotes: NotificationItem[] = dbNotifications.map((n) => ({
+        id: n.id,
+        tone: n.type === "CriticalEvent" || n.type === "EmergencyDispatch" ? "critical" : "online",
+        title: n.title,
+        body: n.message,
+      }));
+      setNotes(initialNotes);
+    }
+  }, [dbNotifications, notes.length]);
 
   const selectedEvent = events.find((e) => e.id === selectedId);
 
@@ -470,17 +488,17 @@ function CommandCenter() {
           <div className="flex items-center justify-between">
             <h2 className="text-[13px] font-semibold">Canlı Bildirimler</h2>
             <Link
-              to="/reports"
+              to="/notifications"
               className="flex items-center gap-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground"
             >
-              Tüm İhbarlar <ChevronRight className="h-3 w-3" />
+              Tüm Bildirimler <ChevronRight className="h-3 w-3" />
             </Link>
           </div>
 
           <div className="scroll-slim mt-3 flex-1 space-y-2 overflow-y-auto pr-1">
             {notes.length === 0 && (
               <div className="py-8 text-center text-[12px] text-muted-foreground">
-                Canlı SignalR websocket bildirimi bekleniyor...
+                Henüz anlık bir bildiriminiz bulunmamaktadır.
               </div>
             )}
             {notes.map((n) => (
