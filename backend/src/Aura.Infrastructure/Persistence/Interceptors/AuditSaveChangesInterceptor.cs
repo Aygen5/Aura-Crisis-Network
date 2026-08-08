@@ -78,36 +78,37 @@ public class AuditSaveChangesInterceptor : SaveChangesInterceptor
                     continue;
                 }
 
+                var formattedCurrent = FormatAuditValue(property.CurrentValue);
+                var formattedOriginal = FormatAuditValue(property.OriginalValue);
+
                 switch (entry.State)
                 {
                     case EntityState.Added:
-                        newValues[propertyName] = property.CurrentValue;
+                        newValues[propertyName] = formattedCurrent;
                         changedColumns.Add(propertyName);
                         break;
 
                     case EntityState.Deleted:
-                        oldValues[propertyName] = property.OriginalValue;
+                        oldValues[propertyName] = formattedOriginal;
                         changedColumns.Add(propertyName);
                         break;
 
                     case EntityState.Modified:
                         if (property.IsModified)
                         {
-                            var original = property.OriginalValue;
-                            var current = property.CurrentValue;
-                            if (!Equals(original, current))
+                            if (!Equals(formattedOriginal, formattedCurrent))
                             {
-                                oldValues[propertyName] = original;
-                                newValues[propertyName] = current;
+                                oldValues[propertyName] = formattedOriginal;
+                                newValues[propertyName] = formattedCurrent;
                                 changedColumns.Add(propertyName);
 
                                 if (propertyName.Equals("IsDeleted", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    if (Equals(current, true))
+                                    if (Equals(formattedCurrent, true))
                                     {
                                         action = "SoftDeleted";
                                     }
-                                    else if (Equals(original, true) && Equals(current, false))
+                                    else if (Equals(formattedOriginal, true) && Equals(formattedCurrent, false))
                                     {
                                         action = "Restored";
                                     }
@@ -151,6 +152,41 @@ public class AuditSaveChangesInterceptor : SaveChangesInterceptor
         }
 
         return base.SavingChangesAsync(eventData, result, cancellationToken);
+    }
+
+    private static object? FormatAuditValue(object? val)
+    {
+        if (val == null) return null;
+
+        if (val is NetTopologySuite.Geometries.Geometry geometry)
+        {
+            return geometry.ToText();
+        }
+
+        if (val is NetTopologySuite.Geometries.Coordinate coord)
+        {
+            return $"({coord.X}, {coord.Y})";
+        }
+
+        if (val is double d)
+        {
+            if (double.IsNaN(d) || double.IsInfinity(d))
+            {
+                return 0.0;
+            }
+            return d;
+        }
+
+        if (val is float f)
+        {
+            if (float.IsNaN(f) || float.IsInfinity(f))
+            {
+                return 0.0f;
+            }
+            return f;
+        }
+
+        return val;
     }
 
     private static string? GetClientIpAddress(HttpContext? httpContext)
