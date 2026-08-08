@@ -131,6 +131,7 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AuraDbContext>();
     await dbContext.Database.MigrateAsync();
+    await AuraDbSeeder.SeedAsync(dbContext);
 }
 
 app.Run();

@@ -468,7 +468,7 @@ function CommandCenter() {
         <section className="glass rounded-xl p-4 animate-fade-in">
           <div className="flex items-center justify-between">
             <h2 className="text-[13px] font-semibold">Saha Filo Takibi</h2>
-            <AuraBadge tone="online">/hubs/vehicles</AuraBadge>
+            <AuraBadge tone="online">Canlı GPS Akışı</AuraBadge>
           </div>
           <ul className="mt-3 space-y-2">
             <li className="flex items-center gap-2 text-[12px]">
@@ -478,7 +478,7 @@ function CommandCenter() {
             </li>
             <li className="flex items-center gap-2 text-[12px]">
               <StatusDot tone="online" pulse={false} />
-              <span className="flex-1 text-foreground/90">5s Canlı GPS Akışı</span>
+              <span className="flex-1 text-foreground/90">Canlı GPS Konum Akışı</span>
               <span className="num text-primary font-bold">{units.length} Araç</span>
             </li>
           </ul>
