@@ -26,7 +26,7 @@ export function AuraLogo({ className }: { className?: string }) {
 export function TopNav({ floating = false }: { floating?: boolean }) {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { user: currentUser, logout } = useAuth();
+  const { user: currentUser, logout, isHydrated } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -97,6 +97,22 @@ export function TopNav({ floating = false }: { floating?: boolean }) {
       <nav className="hidden items-center gap-1 lg:flex">
         {headerItems.map((item) => {
           const active = item.route === "/" ? pathname === "/" : pathname.startsWith(item.route);
+          if (!isHydrated) {
+            return (
+              <a
+                key={item.id}
+                href={item.route}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-[13px] transition-colors duration-200",
+                  active
+                    ? "bg-secondary text-foreground"
+                    : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                )}
+              >
+                {item.title}
+              </a>
+            );
+          }
           return (
             <Link
               key={item.id}

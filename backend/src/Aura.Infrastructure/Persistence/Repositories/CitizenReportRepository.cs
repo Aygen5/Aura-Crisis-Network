@@ -43,7 +43,7 @@ public class CitizenReportRepository : ICitizenReportRepository
 
         if (!isOperatorOrAdmin)
         {
-            query = query.Where(r => r.ReporterUserId == currentUserId);
+            query = query.Where(r => r.ReporterUserId == currentUserId || r.ReporterUserId == null);
         }
 
         return await query

@@ -1,5 +1,6 @@
 using Aura.Domain.Entities;
 using Aura.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 
 namespace Aura.Infrastructure.Persistence;
@@ -10,6 +11,15 @@ public static class AuraDbSeeder
 
     public static async Task SeedAsync(AuraDbContext dbContext)
     {
+        try
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "ALTER TABLE \"CitizenReports\" ADD COLUMN IF NOT EXISTS \"ReporterUserId\" character varying(128);");
+        }
+        catch
+        {
+        }
+
         if (!dbContext.EmergencyUnits.Any())
         {
             var units = new List<EmergencyUnit>
