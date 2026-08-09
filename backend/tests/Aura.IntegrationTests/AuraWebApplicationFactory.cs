@@ -10,6 +10,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Xunit;
 
+using Testcontainers.PostgreSql;
+
 namespace Aura.IntegrationTests;
 
 public class AuraWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
@@ -20,11 +22,12 @@ public class AuraWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
         Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
     };
 
-    private const string TestConnectionString = "Host=127.0.0.1;Port=5432;Database=aura_integration_test_db;Username=aura_user;Password=aura_password_2026!;";
+    private PostgreSqlContainer? _dbContainer;
+    private string _connectionString = "Host=127.0.0.1;Port=5432;Database=aura_integration_test_db;Username=aura_user;Password=aura_password_2026!;";
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseSetting("ConnectionStrings:DefaultConnection", TestConnectionString);
+        builder.UseSetting("ConnectionStrings:DefaultConnection", _connectionString);
 
         builder.ConfigureServices(services =>
         {
@@ -46,6 +49,24 @@ public class AuraWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
 
     public async Task InitializeAsync()
     {
+        try
+        {
+            _dbContainer = new PostgreSqlBuilder()
+                .WithImage("postgis/postgis:16-3.4")
+                .WithDatabase("aura_integration_test_db")
+                .WithUsername("aura_user")
+                .WithPassword("aura_password_2026!")
+                .Build();
+
+            await _dbContainer.StartAsync();
+            _connectionString = _dbContainer.GetConnectionString();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Testcontainers] Docker environment notice: {ex.Message}. Falling back to host database connection.");
+            _dbContainer = null;
+        }
+
         using var scope = Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AuraDbContext>();
         
@@ -66,6 +87,18 @@ public class AuraWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
 
     public new async Task DisposeAsync()
     {
+        if (_dbContainer != null)
+        {
+            try
+            {
+                await _dbContainer.StopAsync();
+                await _dbContainer.DisposeAsync();
+            }
+            catch
+            {
+                // Disposed safely
+            }
+        }
         await base.DisposeAsync();
     }
 
