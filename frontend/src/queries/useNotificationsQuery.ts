@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { notificationsService } from "@/services/notifications.service";
 import { useAuth } from "@/providers/AuthProvider";
-import { isAuthenticated } from "@/lib/api-client";
+import { isAuthenticated, isJwtTokenExpired } from "@/lib/api-client";
 import type { NotificationDto } from "@/types";
 
 export function useUserNotifications(limit = 20) {
