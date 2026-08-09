@@ -7,12 +7,13 @@ import type { NotificationDto } from "@/types";
 export function useUserNotifications(limit = 20) {
   const { authenticated, user } = useAuth();
   const userId = user?.email || user?.fullName || "anonymous";
-  const hasValidAuth = typeof window !== "undefined" && Boolean(user?.accessToken) && isAuthenticated();
+  const token = user?.accessToken || "";
+  const isTokenValid = Boolean(token) && !isJwtTokenExpired(token) && isAuthenticated();
 
   return useQuery<NotificationDto[]>({
     queryKey: ["notifications", userId, limit],
     queryFn: () => notificationsService.getMyNotifications(limit),
-    enabled: Boolean(authenticated && hasValidAuth),
+    enabled: Boolean(authenticated && isTokenValid),
     staleTime: 60000,
     gcTime: 300000,
     retry: false,

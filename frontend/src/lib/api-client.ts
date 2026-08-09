@@ -1,7 +1,7 @@
 export * from "@/types";
 export * from "@/constants";
 export { disasterMeta } from "@/constants/disaster-meta";
-export { getStoredAuth, setStoredAuth, clearStoredAuth, isAuthenticated, getUserRoles, hasAnyRole } from "./http-client";
+export { getStoredAuth, setStoredAuth, clearStoredAuth, isAuthenticated, isJwtTokenExpired, getUserRoles, hasAnyRole } from "./http-client";
 export { authService } from "@/services/auth.service";
 export { eventsService } from "@/services/events.service";
 export { reportsService } from "@/services/reports.service";

@@ -26,10 +26,32 @@ export function clearStoredAuth(): void {
   }
 }
 
+export function isJwtTokenExpired(token: string): boolean {
+  if (!token) return true;
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return true;
+    const payloadJson = atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"));
+    const payload = JSON.parse(payloadJson);
+    if (!payload.exp) return false;
+    return Date.now() >= payload.exp * 1000 - 5000;
+  } catch {
+    return true;
+  }
+}
+
 export function isAuthenticated(): boolean {
   if (typeof window === "undefined") return false;
   const auth = getStoredAuth();
   if (!auth || !auth.accessToken) return false;
+
+  if (isJwtTokenExpired(auth.accessToken)) {
+    if (!auth.refreshToken || (auth.refreshTokenExpiresAt && Date.now() >= new Date(auth.refreshTokenExpiresAt).getTime())) {
+      clearStoredAuth();
+      return false;
+    }
+  }
+
   if (auth.refreshTokenExpiresAt) {
     try {
       const expiresAt = new Date(auth.refreshTokenExpiresAt).getTime();
