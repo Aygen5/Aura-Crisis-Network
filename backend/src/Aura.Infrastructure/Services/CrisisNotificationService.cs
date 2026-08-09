@@ -42,6 +42,27 @@ public class CrisisNotificationService<THub> : ICrisisNotificationService where 
         }
     }
 
+    public async Task NotifyReportCreatedAsync(CitizenReport reportEntity, CancellationToken cancellationToken = default)
+    {
+        var payload = new
+        {
+            reportEntity.Id,
+            reportEntity.Title,
+            Type = reportEntity.Type.ToString(),
+            reportEntity.District,
+            Status = reportEntity.Status.ToString(),
+            reportEntity.CorroborationCount,
+            Latitude = reportEntity.Location.Latitude,
+            Longitude = reportEntity.Location.Longitude,
+            reportEntity.Summary,
+            reportEntity.ReporterName,
+            reportEntity.CreatedAt
+        };
+
+        await _hubContext.Clients.All.SendAsync("ReceiveReportCreated", payload, cancellationToken);
+        await _hubContext.Clients.All.SendAsync("ReceiveReportStatusChanged", payload, cancellationToken);
+    }
+
     public async Task NotifyReportStatusChangedAsync(CitizenReport reportEntity, CancellationToken cancellationToken = default)
     {
         var payload = new

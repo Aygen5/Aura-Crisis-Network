@@ -5,6 +5,7 @@ import { QUERY_KEYS } from "@/constants";
 import {
   startSignalRConnection,
   onEventCreated,
+  onReportCreated,
   onReportStatusChanged,
   onVehiclePositionUpdated,
   getSignalRConnection,
@@ -43,8 +44,20 @@ export function SignalRProvider({ children }: { children: ReactNode }) {
       });
     });
 
+    const unsubReportCreated = onReportCreated((newReport) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.reports.all });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.active() });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.analytics.summary() });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notifications.all });
+
+      toast.warning(`Yeni Vatandaş İhbarı Alındı: ${newReport.title}`, {
+        description: `${newReport.district} · Bildiren: ${newReport.reporterName || "Vatandaş"}`,
+      });
+    });
+
     const unsubReport = onReportStatusChanged((updatedReport) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.reports.all });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.active() });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.analytics.summary() });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notifications.all });
 
@@ -69,6 +82,7 @@ export function SignalRProvider({ children }: { children: ReactNode }) {
 
     return () => {
       unsubEvent();
+      unsubReportCreated();
       unsubReport();
       unsubVehicle();
       clearInterval(interval);

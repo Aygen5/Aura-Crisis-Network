@@ -22,15 +22,18 @@ public record CreateCitizenReportCommand(
 public class CreateCitizenReportCommandHandler : IRequestHandler<CreateCitizenReportCommand, CitizenReportDto>
 {
     private readonly ICitizenReportRepository _citizenReportRepository;
+    private readonly INotificationRepository _notificationRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICrisisNotificationService _notificationService;
 
     public CreateCitizenReportCommandHandler(
         ICitizenReportRepository citizenReportRepository,
+        INotificationRepository notificationRepository,
         IUnitOfWork unitOfWork,
         ICrisisNotificationService notificationService)
     {
         _citizenReportRepository = citizenReportRepository;
+        _notificationRepository = notificationRepository;
         _unitOfWork = unitOfWork;
         _notificationService = notificationService;
     }
@@ -51,9 +54,19 @@ public class CreateCitizenReportCommandHandler : IRequestHandler<CreateCitizenRe
         );
 
         await _citizenReportRepository.AddAsync(report, cancellationToken);
+
+        var systemNotification = new Notification(
+            recipientUserId: "Operator",
+            title: $"Yeni Vatandaş İhbarı ({report.District})",
+            message: $"{report.ReporterName} tarafından ihbar gönderildi: {report.Title}. Detay: {report.Summary}",
+            type: NotificationType.ReportStatusChanged,
+            payloadJson: $"{{\"reportId\":\"{report.Id}\",\"district\":\"{report.District}\"}}"
+        );
+        await _notificationRepository.AddAsync(systemNotification, cancellationToken);
+
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        await _notificationService.NotifyReportStatusChangedAsync(report, cancellationToken);
+        await _notificationService.NotifyReportCreatedAsync(report, cancellationToken);
 
         return new CitizenReportDto(
             report.Id,

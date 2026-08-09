@@ -27,7 +27,7 @@ public class NotificationRepository : INotificationRepository
     public async Task<IReadOnlyList<Notification>> GetUserNotificationsAsync(string recipientUserId, int limit = 20, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Notifications
-            .Where(n => n.RecipientUserId == recipientUserId)
+            .Where(n => n.RecipientUserId == recipientUserId || n.RecipientUserId == "ALL" || n.RecipientUserId == "Operator" || n.RecipientUserId == "Admin" || n.RecipientUserId == "System")
             .OrderByDescending(n => n.CreatedAt)
             .Take(limit)
             .ToListAsync(cancellationToken);
@@ -36,7 +36,7 @@ public class NotificationRepository : INotificationRepository
     public async Task<int> GetUnreadCountAsync(string recipientUserId, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Notifications
-            .Where(n => n.RecipientUserId == recipientUserId && !n.IsRead)
+            .Where(n => (n.RecipientUserId == recipientUserId || n.RecipientUserId == "ALL" || n.RecipientUserId == "Operator" || n.RecipientUserId == "Admin" || n.RecipientUserId == "System") && !n.IsRead)
             .CountAsync(cancellationToken);
     }
 }

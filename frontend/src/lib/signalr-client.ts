@@ -68,6 +68,20 @@ export function onEventCreated(callback: (event: EventDto) => void): () => void 
   };
 }
 
+export function onReportCreated(callback: (report: CitizenReportDto) => void): () => void {
+  const conn = getSignalRConnection();
+  const handler = (data: CitizenReportDto) => callback(data);
+  conn.on("ReceiveReportCreated", handler);
+  conn.on("receiveReportCreated", handler);
+  conn.on("receivereportcreated", handler);
+
+  return () => {
+    conn.off("ReceiveReportCreated", handler);
+    conn.off("receiveReportCreated", handler);
+    conn.off("receivereportcreated", handler);
+  };
+}
+
 export function onReportStatusChanged(callback: (report: CitizenReportDto) => void): () => void {
   const conn = getSignalRConnection();
   const handler = (data: CitizenReportDto) => callback(data);
