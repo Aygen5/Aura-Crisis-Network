@@ -1,15 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { reportsService } from "@/services";
-import { getStoredAuth } from "@/lib/api-client";
+import { useAuth } from "@/providers/AuthProvider";
+import { isAuthenticated } from "@/lib/api-client";
 import type { CreateReportRequest, ReportStatus } from "@/types";
 
 export function useReportsByStatus(status: ReportStatus = "Pending") {
-  const user = getStoredAuth();
+  const { authenticated, user } = useAuth();
   const userId = user?.email || user?.fullName || "anonymous";
+  const hasValidAuth = typeof window !== "undefined" && Boolean(user?.accessToken) && isAuthenticated();
 
   return useQuery({
     queryKey: ["reports", userId, status],
     queryFn: () => reportsService.getReportsByStatus(status),
+    enabled: Boolean(authenticated && hasValidAuth),
   });
 }
 

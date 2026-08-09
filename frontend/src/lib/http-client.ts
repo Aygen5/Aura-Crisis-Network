@@ -27,7 +27,7 @@ export function clearStoredAuth(): void {
 }
 
 export function isAuthenticated(): boolean {
-  if (typeof window === "undefined") return true;
+  if (typeof window === "undefined") return false;
   const auth = getStoredAuth();
   if (!auth || !auth.accessToken) return false;
   if (auth.refreshTokenExpiresAt) {

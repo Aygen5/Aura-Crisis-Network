@@ -75,9 +75,12 @@ export function TopNav({ floating = false }: { floating?: boolean }) {
     ? SEARCHABLE_LOCATIONS.filter((l) => l.name.toLowerCase().includes(searchQuery.toLowerCase()))
     : [];
 
-  const headerItems = NAVIGATION_CONFIG.filter(
-    (item) => item.showInHeader && hasAnyRole(item.requiredRoles)
-  );
+  const userRoles = currentUser?.roles || [];
+  const headerItems = NAVIGATION_CONFIG.filter((item) => {
+    if (!item.showInHeader) return false;
+    if (!item.requiredRoles || item.requiredRoles.length === 0) return true;
+    return item.requiredRoles.some((role) => userRoles.includes(role));
+  });
 
   const userInitials = currentUser?.fullName
     ? currentUser.fullName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)

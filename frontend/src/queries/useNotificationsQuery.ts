@@ -1,17 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { notificationsService } from "@/services/notifications.service";
-import { isAuthenticated, getStoredAuth } from "@/lib/api-client";
+import { useAuth } from "@/providers/AuthProvider";
+import { isAuthenticated } from "@/lib/api-client";
 import type { NotificationDto } from "@/types";
 
 export function useUserNotifications(limit = 20) {
-  const user = getStoredAuth();
+  const { authenticated, user } = useAuth();
   const userId = user?.email || user?.fullName || "anonymous";
-  const hasValidAuth = typeof window !== "undefined" && Boolean(user?.accessToken);
+  const hasValidAuth = typeof window !== "undefined" && Boolean(user?.accessToken) && isAuthenticated();
 
   return useQuery<NotificationDto[]>({
     queryKey: ["notifications", userId, limit],
     queryFn: () => notificationsService.getMyNotifications(limit),
-    enabled: hasValidAuth,
+    enabled: Boolean(authenticated && hasValidAuth),
     staleTime: 60000,
     gcTime: 300000,
     retry: false,

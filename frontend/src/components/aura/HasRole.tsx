@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { hasAnyRole } from "@/lib/http-client";
+import { useAuth } from "@/providers/AuthProvider";
 import type { UserRole } from "@/types";
 
 interface HasRoleProps {
@@ -9,11 +9,18 @@ interface HasRoleProps {
 }
 
 export function HasRole({ roles, fallback = null, children }: HasRoleProps) {
+  const { user, isHydrated } = useAuth();
+
   if (!roles || roles.length === 0) {
     return <>{children}</>;
   }
 
-  const isAuthorized = hasAnyRole(roles);
+  if (!isHydrated || !user || !user.roles) {
+    return <>{fallback}</>;
+  }
+
+  const userRoles = user.roles;
+  const isAuthorized = roles.some((role) => userRoles.includes(role));
 
   if (!isAuthorized) {
     return <>{fallback}</>;
