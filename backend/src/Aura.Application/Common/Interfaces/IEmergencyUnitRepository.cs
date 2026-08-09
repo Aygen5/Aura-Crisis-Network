@@ -11,7 +11,7 @@ public interface IEmergencyUnitRepository
     Task<IReadOnlyList<EmergencyUnit>> GetNearestUnitsAsync(
         double latitude,
         double longitude,
-        int count = 5,
+        int count = 50,
         UnitType? typeFilter = null,
         CancellationToken cancellationToken = default);
     Task UpdateAsync(EmergencyUnit unit, CancellationToken cancellationToken = default);

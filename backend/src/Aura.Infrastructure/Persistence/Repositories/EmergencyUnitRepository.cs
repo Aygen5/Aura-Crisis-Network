@@ -37,7 +37,7 @@ public class EmergencyUnitRepository : IEmergencyUnitRepository
     public async Task<IReadOnlyList<EmergencyUnit>> GetNearestUnitsAsync(
         double latitude,
         double longitude,
-        int count = 5,
+        int count = 50,
         UnitType? typeFilter = null,
         CancellationToken cancellationToken = default)
     {

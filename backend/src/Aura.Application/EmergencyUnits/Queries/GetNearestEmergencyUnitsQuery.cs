@@ -9,7 +9,7 @@ namespace Aura.Application.EmergencyUnits.Queries;
 public record GetNearestEmergencyUnitsQuery(
     double Latitude,
     double Longitude,
-    int Count = 5,
+    int Count = 50,
     UnitType? TypeFilter = null) : IRequest<IReadOnlyList<EmergencyUnitDto>>;
 
 public class GetNearestEmergencyUnitsQueryHandler : IRequestHandler<GetNearestEmergencyUnitsQuery, IReadOnlyList<EmergencyUnitDto>>

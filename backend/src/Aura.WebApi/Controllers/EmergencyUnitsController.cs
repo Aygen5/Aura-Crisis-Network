@@ -43,7 +43,7 @@ public class EmergencyUnitsController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<EmergencyUnitDto>>> GetNearestUnits(
         [FromQuery] double latitude,
         [FromQuery] double longitude,
-        [FromQuery] int count = 5,
+        [FromQuery] int count = 50,
         [FromQuery] UnitType? typeFilter = null,
         CancellationToken cancellationToken = default)
     {
