@@ -11,6 +11,21 @@ jobs:
     name: Backend Build & Test
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: aura_integration_test_db
+          POSTGRES_USER: aura_user
+          POSTGRES_PASSWORD: aura_password_2026!
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -47,7 +62,7 @@ jobs:
 
       - name: Install Frontend Dependencies
         working-directory: ./frontend
-        run: npm ci
+        run: npm install
 
       - name: Build Frontend Production Bundle
         working-directory: ./frontend
