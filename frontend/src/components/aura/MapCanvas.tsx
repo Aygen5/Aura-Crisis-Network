@@ -504,20 +504,47 @@ export const MapCanvas = memo(function MapCanvas({
     };
   }, [bufferPoint]);
 
+  const isEventVisible = useCallback((e: EventDto) => {
+    if (!active) return true;
+    if (e.type === "Earthquake" && active.earthquake === false) return false;
+    if (e.type === "Flood" && active.flood === false) return false;
+    if ((e.type === "Wildfire" || e.type === "Landslide") && active.wildfire === false) return false;
+    if ((e.type === "Report" || e.type === "Medical") && active.report === false) return false;
+    return true;
+  }, [active]);
+
+  const filteredEvents = useMemo(() => {
+    return events.filter(isEventVisible);
+  }, [events, isEventVisible]);
+
+  const isClusterVisible = useCallback((c: MarkerClusterDto) => {
+    if (!active) return true;
+    const type = c.primaryDisasterType;
+    if (type === "Earthquake" && active.earthquake === false) return false;
+    if (type === "Flood" && active.flood === false) return false;
+    if ((type === "Wildfire" || type === "Landslide") && active.wildfire === false) return false;
+    if ((type === "Report" || type === "Medical") && active.report === false) return false;
+    return true;
+  }, [active]);
+
+  const filteredClusters = useMemo(() => {
+    return clusters.filter(isClusterVisible);
+  }, [clusters, isClusterVisible]);
+
   const eventsMap = useMemo(() => {
     const map = new Map<string, EventDto>();
-    for (const e of events) {
+    for (const e of filteredEvents) {
       map.set(e.id, e);
     }
     return map;
-  }, [events]);
+  }, [filteredEvents]);
 
   return (
     <div className={cn("relative overflow-hidden rounded-xl border border-border bg-card shadow-2xl", className)}>
       <BaseMap
         riskZones={riskZones}
         bufferPoint={bufferPoint}
-        events={events}
+        events={filteredEvents}
         heatmap={active?.heatmap}
         risk={active?.risk}
         onMapClick={onMapClick}
@@ -542,18 +569,18 @@ export const MapCanvas = memo(function MapCanvas({
       </div>
 
       <div className="pointer-events-none absolute inset-0" style={markerTransform}>
-        {clusters.length > 0
-          ? clusters.map((c) => (
+        {filteredClusters.length > 0
+          ? filteredClusters.map((c) => (
               <ClusterMarker
                 key={c.clusterId}
                 cluster={c}
-                events={events}
+                events={filteredEvents}
                 eventsMap={eventsMap}
                 onSelect={onSelect}
                 onClusterSelect={onClusterSelect}
               />
             ))
-          : events.map((e) => (
+          : filteredEvents.map((e) => (
               <DisasterMarker
                 key={e.id}
                 event={e}
@@ -579,9 +606,15 @@ export const MapCanvas = memo(function MapCanvas({
   prev.events === next.events &&
   prev.clusters === next.clusters &&
   prev.units === next.units &&
-  prev.active === next.active &&
   prev.className === next.className &&
   prev.zoomLevel === next.zoomLevel &&
   prev.bufferPoint?.lat === next.bufferPoint?.lat &&
-  prev.bufferPoint?.lng === next.bufferPoint?.lng
+  prev.bufferPoint?.lng === next.bufferPoint?.lng &&
+  (prev.active === next.active ||
+    (prev.active?.earthquake === next.active?.earthquake &&
+     prev.active?.flood === next.active?.flood &&
+     prev.active?.wildfire === next.active?.wildfire &&
+     prev.active?.report === next.active?.report &&
+     prev.active?.heatmap === next.active?.heatmap &&
+     prev.active?.risk === next.active?.risk))
 ));
