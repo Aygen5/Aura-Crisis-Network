@@ -35,6 +35,7 @@ import {
   onReportStatusChanged,
 } from "@/lib/signalr-client";
 import { cn } from "@/lib/utils";
+import { formatTime } from "@/utils/formatters";
 
 export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -429,7 +430,7 @@ function CommandCenter() {
                     <span className="flex items-center justify-between gap-2">
                       <span className="truncate text-[13px] font-medium">{e.title}</span>
                       <span className="num shrink-0 text-[11px] text-muted-foreground">
-                        {new Date(e.detectedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        {formatTime(e.detectedAt)}
                       </span>
                     </span>
                     <span className="mt-0.5 block truncate text-[12px] text-muted-foreground">

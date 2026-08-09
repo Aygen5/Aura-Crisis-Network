@@ -395,16 +395,19 @@ const DisasterMarker = memo(function DisasterMarker({
 const ClusterMarker = memo(function ClusterMarker({
   cluster,
   events = [],
+  eventsMap,
   onSelect,
   onClusterSelect,
 }: {
   cluster: MarkerClusterDto;
   events?: EventDto[];
+  eventsMap?: Map<string, EventDto>;
   onSelect?: (e: EventDto) => void;
   onClusterSelect?: (cluster: MarkerClusterDto) => void;
 }) {
   if (cluster.pointCount === 1) {
     const realEvent =
+      eventsMap?.get(cluster.clusterId) ||
       events.find((e) => e.id === cluster.clusterId) ||
       events.find((e) => Math.abs(e.latitude - cluster.latitude) < 0.05 && Math.abs(e.longitude - cluster.longitude) < 0.05);
 
@@ -501,6 +504,14 @@ export const MapCanvas = memo(function MapCanvas({
     };
   }, [bufferPoint]);
 
+  const eventsMap = useMemo(() => {
+    const map = new Map<string, EventDto>();
+    for (const e of events) {
+      map.set(e.id, e);
+    }
+    return map;
+  }, [events]);
+
   return (
     <div className={cn("relative overflow-hidden rounded-xl border border-border bg-card shadow-2xl", className)}>
       <BaseMap
@@ -537,6 +548,7 @@ export const MapCanvas = memo(function MapCanvas({
                 key={c.clusterId}
                 cluster={c}
                 events={events}
+                eventsMap={eventsMap}
                 onSelect={onSelect}
                 onClusterSelect={onClusterSelect}
               />
