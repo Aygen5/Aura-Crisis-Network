@@ -506,10 +506,11 @@ export const MapCanvas = memo(function MapCanvas({
 
   const isEventVisible = useCallback((e: EventDto) => {
     if (!active) return true;
-    if (e.type === "Earthquake" && active.earthquake === false) return false;
-    if (e.type === "Flood" && active.flood === false) return false;
-    if ((e.type === "Wildfire" || e.type === "Landslide") && active.wildfire === false) return false;
-    if ((e.type === "Report" || e.type === "Medical") && active.report === false) return false;
+    const t = String(e.type);
+    if ((t === "Earthquake" || t === "1") && active.earthquake === false) return false;
+    if ((t === "Flood" || t === "2") && active.flood === false) return false;
+    if ((t === "Wildfire" || t === "Landslide" || t === "3" || t === "4") && active.wildfire === false) return false;
+    if ((t === "Report" || t === "Medical" || t === "5" || t === "6") && active.report === false) return false;
     return true;
   }, [active]);
 
@@ -519,11 +520,11 @@ export const MapCanvas = memo(function MapCanvas({
 
   const isClusterVisible = useCallback((c: MarkerClusterDto) => {
     if (!active) return true;
-    const type = c.primaryDisasterType;
-    if (type === "Earthquake" && active.earthquake === false) return false;
-    if (type === "Flood" && active.flood === false) return false;
-    if ((type === "Wildfire" || type === "Landslide") && active.wildfire === false) return false;
-    if ((type === "Report" || type === "Medical") && active.report === false) return false;
+    const t = String(c.primaryDisasterType);
+    if ((t === "Earthquake" || t === "1") && active.earthquake === false) return false;
+    if ((t === "Flood" || t === "2") && active.flood === false) return false;
+    if ((t === "Wildfire" || t === "Landslide" || t === "3" || t === "4") && active.wildfire === false) return false;
+    if ((t === "Report" || t === "Medical" || t === "5" || t === "6") && active.report === false) return false;
     return true;
   }, [active]);
 

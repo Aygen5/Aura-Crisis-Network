@@ -21,20 +21,23 @@ export function DisasterIcon({ type, className, animated = true }: Props) {
   let normalizedType = "";
   if (typeof type === "number") {
     switch (type) {
-      case 0:
+      case 1:
         normalizedType = "earthquake";
         break;
-      case 1:
+      case 2:
         normalizedType = "flood";
         break;
-      case 2:
+      case 3:
         normalizedType = "wildfire";
         break;
-      case 3:
+      case 4:
         normalizedType = "landslide";
         break;
-      case 4:
+      case 5:
         normalizedType = "medical";
+        break;
+      case 6:
+        normalizedType = "report";
         break;
       default:
         normalizedType = "report";

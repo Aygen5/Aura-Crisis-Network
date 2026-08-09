@@ -143,15 +143,53 @@ public class GisTileRepository : IGisTileRepository
                 .Where(e => !e.IsDeleted && e.Location.Latitude >= minLat && e.Location.Latitude <= maxLat && e.Location.Longitude >= minLng && e.Location.Longitude <= maxLng)
                 .ToListAsync(cancellationToken);
 
-            return events.Select(e => new MarkerClusterDto(
-                ClusterId: e.Id.ToString(),
-                PointCount: 1,
-                Latitude: e.Location.Latitude,
-                Longitude: e.Location.Longitude,
-                MaxSeverity: e.Severity,
-                PrimaryDisasterType: e.Type.ToString(),
-                IsCluster: false
-            )).ToList();
+            var reports = await _dbContext.CitizenReports
+                .Where(r => !r.IsDeleted && r.Location.Latitude >= minLat && r.Location.Latitude <= maxLat && r.Location.Longitude >= minLng && r.Location.Longitude <= maxLng)
+                .ToListAsync(cancellationToken);
+
+            var allMarkers = events.Select(e => new {
+                Id = e.Id.ToString(),
+                Lat = e.Location.Latitude,
+                Lng = e.Location.Longitude,
+                Severity = e.Severity,
+                Type = e.Type.ToString()
+            }).Concat(reports.Select(r => new {
+                Id = r.Id.ToString(),
+                Lat = r.Location.Latitude,
+                Lng = r.Location.Longitude,
+                Severity = 50,
+                Type = r.Type.ToString() == "Earthquake" || r.Type.ToString() == "Flood" || r.Type.ToString() == "Wildfire" || r.Type.ToString() == "Landslide" || r.Type.ToString() == "Medical" ? r.Type.ToString() : "Report"
+            })).ToList();
+
+            if (allMarkers.Count == 0) return Array.Empty<MarkerClusterDto>();
+
+            var grouped = allMarkers.GroupBy(m => new {
+                LatGrid = Math.Floor(m.Lat / gridStep),
+                LngGrid = Math.Floor(m.Lng / gridStep)
+            });
+
+            var result = new List<MarkerClusterDto>();
+            foreach (var g in grouped)
+            {
+                var count = g.Count();
+                var avgLat = g.Average(x => x.Lat);
+                var avgLng = g.Average(x => x.Lng);
+                var maxSeverity = g.Max(x => x.Severity);
+                var primaryType = g.GroupBy(x => x.Type).OrderByDescending(tg => tg.Count()).First().Key;
+                var clusterId = count == 1 ? g.First().Id : $"{g.Key.LatGrid}_{g.Key.LngGrid}";
+
+                result.Add(new MarkerClusterDto(
+                    ClusterId: clusterId,
+                    PointCount: count,
+                    Latitude: avgLat,
+                    Longitude: avgLng,
+                    MaxSeverity: maxSeverity,
+                    PrimaryDisasterType: primaryType,
+                    IsCluster: count > 1
+                ));
+            }
+
+            return result;
         }
     }
 }
