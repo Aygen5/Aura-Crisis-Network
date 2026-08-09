@@ -37,10 +37,14 @@ public class RiskZoneRepository : IRiskZoneRepository
     {
         var point = GeometryFactory.CreatePoint(new Coordinate(longitude, latitude));
 
-        return await _dbContext.RiskZones
-            .Where(z => z.Boundary.Intersects(point) || z.Boundary.Contains(point))
-            .OrderByDescending(z => z.Severity)
+        var allZones = await _dbContext.RiskZones
+            .Where(z => !z.IsDeleted)
             .ToListAsync(cancellationToken);
+
+        return allZones
+            .Where(z => z.Boundary != null && (z.Boundary.Contains(point) || z.Boundary.Intersects(point)))
+            .OrderByDescending(z => z.Severity)
+            .ToList();
     }
 
     public async Task<IReadOnlyList<RiskZone>> GetZonesWithinBufferAsync(
@@ -50,10 +54,15 @@ public class RiskZoneRepository : IRiskZoneRepository
         CancellationToken cancellationToken = default)
     {
         var point = GeometryFactory.CreatePoint(new Coordinate(longitude, latitude));
+        var radiusDegrees = radiusMeters / 111320.0;
 
-        return await _dbContext.RiskZones
-            .Where(z => EF.Functions.IsWithinDistance(z.Boundary, point, radiusMeters, true))
-            .OrderByDescending(z => z.Severity)
+        var allZones = await _dbContext.RiskZones
+            .Where(z => !z.IsDeleted)
             .ToListAsync(cancellationToken);
+
+        return allZones
+            .Where(z => z.Boundary != null && (z.Boundary.Contains(point) || z.Boundary.Distance(point) <= radiusDegrees))
+            .OrderByDescending(z => z.Severity)
+            .ToList();
     }
 }

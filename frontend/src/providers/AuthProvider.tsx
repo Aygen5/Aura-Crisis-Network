@@ -16,8 +16,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
-  const [user, setUser] = useState<AuthResponseDto | null>(null);
-  const [authenticated, setAuthenticated] = useState<boolean>(false);
+  const [user, setUser] = useState<AuthResponseDto | null>(() => getStoredAuth());
+  const [authenticated, setAuthenticated] = useState<boolean>(() => isAuthenticated());
   const [isHydrated, setIsHydrated] = useState<boolean>(false);
 
   useEffect(() => {
