@@ -51,10 +51,12 @@ public class EmergencyUnitRepository : IEmergencyUnitRepository
             query = query.Where(u => u.Type == typeFilter.Value);
         }
 
-        return await query
-            .OrderBy(u => u.CurrentLocation.Distance(targetPoint))
+        var units = await query.ToListAsync(cancellationToken);
+
+        return units
+            .OrderBy(u => u.CurrentLocation != null ? u.CurrentLocation.Distance(targetPoint) : double.MaxValue)
             .Take(count)
-            .ToListAsync(cancellationToken);
+            .ToList();
     }
 
     public Task UpdateAsync(EmergencyUnit unit, CancellationToken cancellationToken = default)

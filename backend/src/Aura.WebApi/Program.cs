@@ -58,7 +58,9 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
         ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero
+        ClockSkew = TimeSpan.Zero,
+        RoleClaimType = System.Security.Claims.ClaimTypes.Role,
+        NameClaimType = System.Security.Claims.ClaimTypes.NameIdentifier
     };
 });
 
@@ -127,11 +129,16 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
     Predicate = check => check.Tags.Contains("ready")
 });
 
-using (var scope = app.Services.CreateScope())
+if (!app.Environment.IsEnvironment("Testing"))
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<AuraDbContext>();
-    await dbContext.Database.MigrateAsync();
-    await AuraDbSeeder.SeedAsync(dbContext);
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<AuraDbContext>();
+        await dbContext.Database.MigrateAsync();
+        await AuraDbSeeder.SeedAsync(dbContext);
+    }
 }
 
 app.Run();
+
+public partial class Program { }

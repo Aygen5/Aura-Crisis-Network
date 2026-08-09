@@ -7,5 +7,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Aura.UnitTests/Aura.UnitTests.csproj" />
+    <Project Path="tests/Aura.IntegrationTests/Aura.IntegrationTests.csproj" />
   </Folder>
 </Solution>
