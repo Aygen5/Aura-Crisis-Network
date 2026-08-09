@@ -7,6 +7,7 @@ import {
   ChevronRight,
   FileWarning,
   Layers,
+  Loader2,
   Pause,
   Play,
   Plus,
@@ -411,24 +412,32 @@ function CommandCenter() {
             {displayEvents.map((e) => {
               const meta = disasterMeta[e.type] ?? disasterMeta.Earthquake;
               const isSel = selectedId === e.id;
+              const isCritical = Boolean(e.escalatedAt) || e.severity >= 80;
               return (
                 <button
                   key={e.id}
                   onClick={() => setSelected(e.id)}
                   className={cn(
-                    "flex w-full items-start gap-2.5 rounded-lg p-2.5 text-left transition-all duration-200",
-                    isSel
+                    "flex w-full items-start gap-2.5 rounded-lg p-2.5 text-left transition-all duration-300",
+                    isCritical
+                      ? "bg-red-500/15 border-l-4 border-l-red-500 ring-1 ring-red-500/30 shadow-red-500/20 shadow-md"
+                      : isSel
                       ? "bg-foreground/10 ring-1 ring-white/15"
                       : "hover:bg-foreground/5"
                   )}
                 >
                   <span
-                    className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: meta.color }}
+                    className={cn(
+                      "mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full",
+                      isCritical ? "bg-red-500 animate-ping" : ""
+                    )}
+                    style={{ backgroundColor: isCritical ? undefined : meta.color }}
                   />
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center justify-between gap-2">
-                      <span className="truncate text-[13px] font-medium">{e.title}</span>
+                      <span className={cn("truncate text-[13px] font-medium", isCritical ? "text-red-400 font-bold" : "")}>
+                        {e.title}
+                      </span>
                       <span className="num shrink-0 text-[11px] text-muted-foreground">
                         {formatTime(e.detectedAt)}
                       </span>
@@ -437,10 +446,15 @@ function CommandCenter() {
                       {e.district}, {e.locationName}
                     </span>
                     <span className="mt-2 flex items-center gap-2">
-                      <span className="num text-[12px] font-semibold text-primary">
+                      <span className={cn("num text-[12px] font-semibold", isCritical ? "text-red-400 font-bold" : "text-primary")}>
                         {e.metric} {e.metricLabel}
                       </span>
                       <span className="text-[11px] text-muted-foreground">· {e.source}</span>
+                      {isCritical && (
+                        <span className="ml-auto rounded bg-red-500/20 px-1.5 py-0.5 text-[9px] font-bold text-red-400 border border-red-500/30 uppercase animate-pulse">
+                          Kritik
+                        </span>
+                      )}
                     </span>
                   </span>
                 </button>
@@ -817,10 +831,29 @@ function CommandCenter() {
                   <button
                     onClick={() => escalateMutation.mutate(selectedEvent.id)}
                     disabled={escalateMutation.isPending}
-                    className="flex h-9 items-center gap-1.5 rounded-lg bg-red-600 px-3.5 text-[13px] font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+                    className={cn(
+                      "flex h-9 items-center gap-1.5 rounded-lg px-3.5 text-[13px] font-medium text-white transition-all duration-300 disabled:opacity-50",
+                      selectedEvent.escalatedAt || selectedEvent.severity >= 80
+                        ? "bg-red-600 hover:bg-red-700 ring-2 ring-red-500/50 shadow-red-600/40"
+                        : "bg-red-600 hover:bg-red-700"
+                    )}
                   >
-                    <AlertTriangle className="h-3.5 w-3.5" />
-                    {escalateMutation.isPending ? "Yükseltiliyor..." : "Seviyeyi Yükselt"}
+                    {escalateMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Yükseltiliyor...
+                      </>
+                    ) : selectedEvent.escalatedAt ? (
+                      <>
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        Seviye Yükseltildi (Kritik)
+                      </>
+                    ) : (
+                      <>
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        Seviyeyi Yükselt
+                      </>
+                    )}
                   </button>
                 </HasRole>
                 <Link

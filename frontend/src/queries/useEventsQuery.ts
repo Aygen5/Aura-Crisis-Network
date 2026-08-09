@@ -25,13 +25,59 @@ export function useEscalateEvent() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => eventsService.escalateEvent(id),
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.all });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.detail(id) });
+
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.events.all });
+      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.events.detail(id) });
+      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.events.active() });
+
+      const previousDetail = queryClient.getQueryData(QUERY_KEYS.events.detail(id));
+      const previousActive = queryClient.getQueryData<any[]>(QUERY_KEYS.events.active());
+
+      const updateOptimistically = (event: any) => ({
+        ...event,
+        severity: Math.min(100, (event.severity || 70) + 15),
+        escalatedAt: new Date().toISOString(),
+        summary: event.summary?.includes("(YÜKSELTİLDİ)")
+          ? event.summary
+          : `${event.summary || ""} [ALARM SEVİYESİ YÜKSELTİLDİ]`,
+      });
+
+      if (previousDetail) {
+        queryClient.setQueryData(
+          QUERY_KEYS.events.detail(id),
+          updateOptimistically(previousDetail)
+        );
+      }
+
+      if (previousActive) {
+        queryClient.setQueryData(
+          QUERY_KEYS.events.active(),
+          previousActive.map((e) => (e.id === id ? updateOptimistically(e) : e))
+        );
+      }
+
+      return { previousDetail, previousActive };
+    },
+
+    onError: (err: any, id: string, context: any) => {
+      if (context?.previousDetail) {
+        queryClient.setQueryData(QUERY_KEYS.events.detail(id), context.previousDetail);
+      }
+      if (context?.previousActive) {
+        queryClient.setQueryData(QUERY_KEYS.events.active(), context.previousActive);
+      }
+      toast.error(err?.message || "Afet seviyesi yükseltilemedi. Lütfen yetkinizi kontrol ediniz.");
+    },
+
+    onSuccess: () => {
       toast.success("Afet alarm seviyesi başarıyla yükseltildi.");
     },
-    onError: (err: any) => {
-      toast.error(err?.message || "Afet seviyesi yükseltilemedi. Lütfen yetkinizi kontrol ediniz.");
+
+    onSettled: (_, __, id: string) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.all });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.detail(id) });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.events.active() });
     },
   });
 }

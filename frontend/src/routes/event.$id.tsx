@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound, redirect } from "@tanstack/react-router";
-import { ArrowLeft, ExternalLink, MapPin } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ExternalLink, Loader2, MapPin } from "lucide-react";
 import { AppShell } from "@/components/aura/AppShell";
 import { MapCanvas } from "@/components/aura/MapCanvas";
 import { DisasterIcon } from "@/components/aura/DisasterIcon";
@@ -7,6 +7,7 @@ import { AuraBadge, PanelCard, StatusDot } from "@/components/aura/primitives";
 import { HasRole } from "@/components/aura/HasRole";
 import { useEventById, useEscalateEvent, useActiveEvents } from "@/queries/useEventsQuery";
 import { disasterMeta, fetchEventById, isAuthenticated, type EventDto } from "@/lib/api-client";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/event/$id")({
   beforeLoad: () => {
@@ -76,9 +77,26 @@ function EventDetail() {
             <button
               onClick={handleEscalate}
               disabled={escalateMutation.isPending}
-              className="flex h-9 items-center gap-2 rounded-lg bg-red-600 px-4 text-[13px] font-medium text-white transition-opacity duration-200 hover:bg-red-700 disabled:opacity-50"
+              className={cn(
+                "flex h-9 items-center gap-2 rounded-lg px-4 text-[13px] font-medium text-white transition-all duration-300 shadow-md",
+                event.escalatedAt || event.severity >= 80
+                  ? "bg-red-600 hover:bg-red-700 ring-2 ring-red-500/50 shadow-red-600/40"
+                  : "bg-amber-600 hover:bg-amber-700"
+              )}
             >
-              {escalateMutation.isPending ? "Yükseltiliyor..." : "Seviyeyi Yükselt (Escalate)"}
+              {escalateMutation.isPending ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Yükseltiliyor...
+                </>
+              ) : event.escalatedAt ? (
+                <>
+                  <AlertTriangle className="h-3.5 w-3.5" /> Seviye Yükseltildi (Kritik)
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="h-3.5 w-3.5" /> Seviyeyi Yükselt (Escalate)
+                </>
+              )}
             </button>
           </HasRole>
         </div>
@@ -86,7 +104,14 @@ function EventDetail() {
     >
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <PanelCard className="overflow-hidden">
+          <PanelCard
+            className={cn(
+              "overflow-hidden transition-all duration-500",
+              (event.escalatedAt || event.severity >= 80)
+                ? "border-red-500/60 bg-red-950/20 shadow-red-500/20 ring-1 ring-red-500/30"
+                : ""
+            )}
+          >
             <div className="flex items-start gap-4 p-6">
               <span
                 className="flex h-14 w-14 items-center justify-center rounded-xl border border-current/25 bg-background/50"
@@ -99,10 +124,15 @@ function EventDetail() {
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <AuraBadge tone="info">{meta.label}</AuraBadge>
-                  <AuraBadge tone={event.status === "Active" ? "critical" : "neutral"}>
-                    <StatusDot tone={event.status === "Active" ? "critical" : "neutral"} pulse={false} />
-                    {event.status}
+                  <AuraBadge tone={event.status === "Active" || event.severity >= 80 ? "critical" : "neutral"}>
+                    <StatusDot tone={event.status === "Active" || event.severity >= 80 ? "critical" : "neutral"} pulse={event.severity >= 80} />
+                    {event.severity >= 80 ? "Critical" : event.status}
                   </AuraBadge>
+                  {event.escalatedAt && (
+                    <AuraBadge tone="critical" className="animate-pulse">
+                      <AlertTriangle className="mr-1 h-3 w-3" /> YÜKSELTİLDİ
+                    </AuraBadge>
+                  )}
                   <span className="num text-[11px] text-muted-foreground">{event.id}</span>
                 </div>
                 <p className="mt-3 max-w-2xl text-[13px] leading-relaxed text-muted-foreground">
@@ -111,7 +141,10 @@ function EventDetail() {
               </div>
               <div className="text-right">
                 <div className="label-xs">{event.metricLabel}</div>
-                <div className="num mt-1 text-3xl font-semibold text-primary">
+                <div className={cn(
+                  "num mt-1 text-3xl font-semibold",
+                  (event.escalatedAt || event.severity >= 80) ? "text-red-500 animate-pulse font-bold" : "text-primary"
+                )}>
                   {event.metric}
                 </div>
               </div>
@@ -122,11 +155,16 @@ function EventDetail() {
                 ["Şiddet İndeksi", `${event.severity}/100`],
                 ["Kaynak", event.source],
                 ["Tespit Zamanı", new Date(event.detectedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })],
-                ["Son Durum", event.status],
+                ["Son Durum", event.severity >= 80 ? "Kritik Yüksek" : event.status],
               ].map(([k, v]) => (
                 <div key={k} className="bg-card px-6 py-4">
                   <div className="label-xs">{k}</div>
-                  <div className="num mt-1 text-[15px] font-medium">{v}</div>
+                  <div className={cn(
+                    "num mt-1 text-[15px] font-medium",
+                    k === "Şiddet İndeksi" && (event.escalatedAt || event.severity >= 80) ? "text-red-500 font-bold animate-pulse" : ""
+                  )}>
+                    {v}
+                  </div>
                 </div>
               ))}
             </div>
