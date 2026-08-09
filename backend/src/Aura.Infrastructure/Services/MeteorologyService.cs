@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using Aura.Application.Common.Interfaces;
 using Aura.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace Aura.Infrastructure.Services;
 
@@ -42,6 +43,9 @@ public class MeteorologyService : IMeteorologyService
 
     public async Task FetchAndUpdateDistrictWeatherRisksAsync(CancellationToken cancellationToken = default)
     {
+        var existingRisksList = await _districtRiskRepository.GetAllDistrictRisksAsync(cancellationToken);
+        var existingDict = existingRisksList.ToDictionary(r => r.DistrictName, StringComparer.OrdinalIgnoreCase);
+
         foreach (var (districtName, (lat, lng, initialSeismic)) in DistrictCoordinates)
         {
             try
@@ -74,8 +78,7 @@ public class MeteorologyService : IMeteorologyService
                 int wildfireRisk = CalculateWildfireRisk(windSpeed);
                 int landslideRisk = CalculateLandslideRisk(precipitation);
 
-                var existingRisk = await _districtRiskRepository.GetByDistrictNameAsync(districtName, cancellationToken);
-                if (existingRisk != null)
+                if (existingDict.TryGetValue(districtName, out var existingRisk))
                 {
                     existingRisk.UpdateRiskScores(existingRisk.SeismicRisk, floodRisk, landslideRisk, wildfireRisk);
                 }
@@ -83,6 +86,7 @@ public class MeteorologyService : IMeteorologyService
                 {
                     var newRisk = new DistrictRisk(districtName, initialSeismic, floodRisk, landslideRisk, wildfireRisk);
                     await _districtRiskRepository.AddAsync(newRisk, cancellationToken);
+                    existingDict[districtName] = newRisk;
                 }
             }
             catch
@@ -90,7 +94,14 @@ public class MeteorologyService : IMeteorologyService
             }
         }
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("23505") == true || ex.InnerException?.Message.Contains("IX_DistrictRisks_DistrictName") == true)
+        {
+            // Ignore concurrent duplicate inserts if executed in parallel
+        }
     }
 
     private static int CalculateFloodRisk(double precipitationMm)
