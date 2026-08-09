@@ -28,14 +28,11 @@ public class EventConfiguration : IEntityTypeConfiguration<Event>
 
         builder.Property(e => e.Location)
             .HasConversion(
-                geoPoint => new Point(geoPoint.Longitude, geoPoint.Latitude) { SRID = 4326 },
-                point => new GeoPoint(point.Y, point.X)
+                geoPoint => new Point(geoPoint.Longitude, geoPoint.Latitude) { SRID = 4326 }.ToText(),
+                wkt => ParseGeoPointFromWkt(wkt)
             )
-            .HasColumnType("geometry(Point, 4326)")
+            .HasColumnType("text")
             .IsRequired();
-
-        builder.HasIndex(e => e.Location)
-            .HasMethod("GIST");
 
         builder.Property(e => e.LocationName)
             .HasMaxLength(200);
@@ -61,5 +58,12 @@ public class EventConfiguration : IEntityTypeConfiguration<Event>
 
         builder.Property(e => e.Summary)
             .HasMaxLength(2000);
+    }
+
+    private static GeoPoint ParseGeoPointFromWkt(string wkt)
+    {
+        if (string.IsNullOrWhiteSpace(wkt)) return new GeoPoint(0, 0);
+        var pt = (Point)new NetTopologySuite.IO.WKTReader().Read(wkt);
+        return new GeoPoint(pt.Y, pt.X);
     }
 }

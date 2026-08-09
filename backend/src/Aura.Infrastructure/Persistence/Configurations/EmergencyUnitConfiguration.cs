@@ -1,6 +1,7 @@
 using Aura.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using NetTopologySuite.Geometries;
 
 namespace Aura.Infrastructure.Persistence.Configurations;
 
@@ -27,10 +28,11 @@ public class EmergencyUnitConfiguration : IEntityTypeConfiguration<EmergencyUnit
             .IsRequired();
 
         builder.Property(u => u.CurrentLocation)
-            .HasColumnType("geometry(Point, 4326)")
+            .HasConversion(
+                point => point.ToText(),
+                wkt => (Point)new NetTopologySuite.IO.WKTReader().Read(wkt)
+            )
+            .HasColumnType("text")
             .IsRequired();
-
-        builder.HasIndex(u => u.CurrentLocation)
-            .HasMethod("gist");
     }
 }

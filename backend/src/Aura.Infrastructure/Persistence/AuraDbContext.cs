@@ -29,7 +29,7 @@ public class AuraDbContext : IdentityDbContext<ApplicationUser, ApplicationRole,
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.HasPostgresExtension("postgis");
+        // modelBuilder.HasPostgresExtension("postgis");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AuraDbContext).Assembly);
 
         modelBuilder.Entity<RefreshToken>(builder =>

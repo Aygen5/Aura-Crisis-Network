@@ -30,10 +30,11 @@ public class RiskZoneConfiguration : IEntityTypeConfiguration<RiskZone>
             .HasMaxLength(2000);
 
         builder.Property(r => r.Boundary)
-            .HasColumnType("geometry(Polygon, 4326)")
+            .HasConversion(
+                polygon => polygon.ToText(),
+                wkt => (NetTopologySuite.Geometries.Polygon)new NetTopologySuite.IO.WKTReader().Read(wkt)
+            )
+            .HasColumnType("text")
             .IsRequired();
-
-        builder.HasIndex(r => r.Boundary)
-            .HasMethod("gist");
     }
 }

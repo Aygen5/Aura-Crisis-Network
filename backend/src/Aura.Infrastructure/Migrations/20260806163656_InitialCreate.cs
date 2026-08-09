@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -13,8 +13,8 @@ namespace Aura.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AlterDatabase()
-                .Annotation("Npgsql:PostgresExtension:postgis", ",,");
+            // migrationBuilder.AlterDatabase()
+            //     .Annotation("Npgsql:PostgresExtension:postgis", ",,");
 
             migrationBuilder.CreateTable(
                 name: "AspNetRoles",
@@ -90,7 +90,7 @@ namespace Aura.Infrastructure.Migrations
                     District = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     ReporterName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     ReporterPhone = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
-                    Location = table.Column<Point>(type: "geometry(Point, 4326)", nullable: false),
+                    Location = table.Column<Point>(type: "text", nullable: false),
                     Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     CorroborationCount = table.Column<int>(type: "integer", nullable: false),
                     Summary = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false),
@@ -134,7 +134,7 @@ namespace Aura.Infrastructure.Migrations
                     PlateNumber = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     Type = table.Column<int>(type: "integer", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
-                    CurrentLocation = table.Column<Point>(type: "geometry(Point, 4326)", nullable: false),
+                    CurrentLocation = table.Column<Point>(type: "text", nullable: false),
                     SpeedKmh = table.Column<double>(type: "double precision", nullable: false),
                     HeadingDegrees = table.Column<double>(type: "double precision", nullable: false),
                     AssignedEventId = table.Column<Guid>(type: "uuid", nullable: true),
@@ -157,7 +157,7 @@ namespace Aura.Infrastructure.Migrations
                     Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     Severity = table.Column<int>(type: "integer", nullable: false),
-                    Location = table.Column<Point>(type: "geometry(Point, 4326)", nullable: false),
+                    Location = table.Column<Point>(type: "text", nullable: false),
                     LocationName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     District = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
@@ -249,7 +249,7 @@ namespace Aura.Infrastructure.Migrations
                     Type = table.Column<int>(type: "integer", nullable: false),
                     Severity = table.Column<int>(type: "integer", nullable: false),
                     Description = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false),
-                    Boundary = table.Column<Polygon>(type: "geometry(Polygon, 4326)", nullable: false),
+                    Boundary = table.Column<Polygon>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
@@ -477,11 +477,11 @@ namespace Aura.Infrastructure.Migrations
                 table: "AuditLogs",
                 column: "UserId");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_CitizenReports_Location",
-                table: "CitizenReports",
-                column: "Location")
-                .Annotation("Npgsql:IndexMethod", "GIST");
+            // migrationBuilder.CreateIndex(
+            //     name: "IX_CitizenReports_Location",
+            //     table: "CitizenReports",
+            //     column: "Location")
+            //     .Annotation("Npgsql:IndexMethod", "GIST");
 
             migrationBuilder.CreateIndex(
                 name: "IX_DistrictRisks_DistrictName",
@@ -489,17 +489,17 @@ namespace Aura.Infrastructure.Migrations
                 column: "DistrictName",
                 unique: true);
 
-            migrationBuilder.CreateIndex(
-                name: "IX_EmergencyUnits_CurrentLocation",
-                table: "EmergencyUnits",
-                column: "CurrentLocation")
-                .Annotation("Npgsql:IndexMethod", "gist");
+            // migrationBuilder.CreateIndex(
+            //     name: "IX_EmergencyUnits_CurrentLocation",
+            //     table: "EmergencyUnits",
+            //     column: "CurrentLocation")
+            //     .Annotation("Npgsql:IndexMethod", "gist");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Events_Location",
-                table: "Events",
-                column: "Location")
-                .Annotation("Npgsql:IndexMethod", "GIST");
+            // migrationBuilder.CreateIndex(
+            //     name: "IX_Events_Location",
+            //     table: "Events",
+            //     column: "Location")
+            //     .Annotation("Npgsql:IndexMethod", "GIST");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Notifications_RecipientUserId_IsRead_CreatedAt",
@@ -533,11 +533,11 @@ namespace Aura.Infrastructure.Migrations
                 table: "ReportAttachments",
                 column: "CitizenReportId");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_RiskZones_Boundary",
-                table: "RiskZones",
-                column: "Boundary")
-                .Annotation("Npgsql:IndexMethod", "gist");
+            // migrationBuilder.CreateIndex(
+            //     name: "IX_RiskZones_Boundary",
+            //     table: "RiskZones",
+            //     column: "Boundary")
+            //     .Annotation("Npgsql:IndexMethod", "gist");
         }
 
         /// <inheritdoc />

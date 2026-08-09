@@ -3,6 +3,7 @@ using Aura.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using NetTopologySuite.Geometries;
+using NetTopologySuite.IO;
 
 namespace Aura.Infrastructure.Persistence.Configurations;
 
@@ -35,14 +36,11 @@ public class CitizenReportConfiguration : IEntityTypeConfiguration<CitizenReport
 
         builder.Property(r => r.Location)
             .HasConversion(
-                geoPoint => new Point(geoPoint.Longitude, geoPoint.Latitude) { SRID = 4326 },
-                point => new GeoPoint(point.Y, point.X)
+                geoPoint => new Point(geoPoint.Longitude, geoPoint.Latitude) { SRID = 4326 }.ToText(),
+                wkt => ParseGeoPointFromWkt(wkt)
             )
-            .HasColumnType("geometry(Point, 4326)")
+            .HasColumnType("text")
             .IsRequired();
-
-        builder.HasIndex(r => r.Location)
-            .HasMethod("GIST");
 
         builder.Property(r => r.Status)
             .HasConversion<string>()
@@ -60,5 +58,12 @@ public class CitizenReportConfiguration : IEntityTypeConfiguration<CitizenReport
             .WithOne()
             .HasForeignKey(a => a.CitizenReportId)
             .OnDelete(DeleteBehavior.Cascade);
+    }
+
+    private static GeoPoint ParseGeoPointFromWkt(string wkt)
+    {
+        if (string.IsNullOrWhiteSpace(wkt)) return new GeoPoint(0, 0);
+        var pt = (Point)new WKTReader().Read(wkt);
+        return new GeoPoint(pt.Y, pt.X);
     }
 }

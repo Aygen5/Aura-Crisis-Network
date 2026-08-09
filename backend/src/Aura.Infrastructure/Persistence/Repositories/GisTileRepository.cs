@@ -42,20 +42,27 @@ public class GisTileRepository : IGisTileRepository
             SELECT COALESCE(ST_AsMVT(mvt_geom.*, 'risk_zones', 4096, 'geom'), '\x'::bytea)
             FROM mvt_geom;";
 
-        var connection = (NpgsqlConnection)_dbContext.Database.GetDbConnection();
-        if (connection.State != ConnectionState.Open)
+        try
         {
-            await connection.OpenAsync(cancellationToken);
+            var connection = (NpgsqlConnection)_dbContext.Database.GetDbConnection();
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.OpenAsync(cancellationToken);
+            }
+
+            using var command = new NpgsqlCommand(sql, connection);
+            command.Parameters.AddWithValue("lonMin", lonMin);
+            command.Parameters.AddWithValue("latMin", latMin);
+            command.Parameters.AddWithValue("lonMax", lonMax);
+            command.Parameters.AddWithValue("latMax", latMax);
+
+            var result = await command.ExecuteScalarAsync(cancellationToken);
+            return result is byte[] bytes ? bytes : Array.Empty<byte>();
         }
-
-        using var command = new NpgsqlCommand(sql, connection);
-        command.Parameters.AddWithValue("lonMin", lonMin);
-        command.Parameters.AddWithValue("latMin", latMin);
-        command.Parameters.AddWithValue("lonMax", lonMax);
-        command.Parameters.AddWithValue("latMax", latMax);
-
-        var result = await command.ExecuteScalarAsync(cancellationToken);
-        return result is byte[] bytes ? bytes : Array.Empty<byte>();
+        catch
+        {
+            return Array.Empty<byte>();
+        }
     }
 
     public async Task<IReadOnlyList<MarkerClusterDto>> GetClusteredMarkersAsync(
@@ -92,41 +99,59 @@ public class GisTileRepository : IGisTileRepository
 
         var clusters = new List<MarkerClusterDto>();
 
-        var connection = (NpgsqlConnection)_dbContext.Database.GetDbConnection();
-        if (connection.State != ConnectionState.Open)
+        try
         {
-            await connection.OpenAsync(cancellationToken);
+            var connection = (NpgsqlConnection)_dbContext.Database.GetDbConnection();
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.OpenAsync(cancellationToken);
+            }
+
+            using var command = new NpgsqlCommand(sql, connection);
+            command.Parameters.AddWithValue("minLat", minLat);
+            command.Parameters.AddWithValue("maxLat", maxLat);
+            command.Parameters.AddWithValue("minLng", minLng);
+            command.Parameters.AddWithValue("maxLng", maxLng);
+            command.Parameters.AddWithValue("gridStep", gridStep);
+
+            using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                var clusterId = reader.IsDBNull(0) ? string.Empty : reader.GetString(0);
+                var pointCount = reader.IsDBNull(1) ? 0 : Convert.ToInt32(reader.GetValue(1));
+                var lat = reader.IsDBNull(2) ? 0.0 : Convert.ToDouble(reader.GetValue(2));
+                var lng = reader.IsDBNull(3) ? 0.0 : Convert.ToDouble(reader.GetValue(3));
+                var maxSeverity = reader.IsDBNull(4) ? 1 : Convert.ToInt32(reader.GetValue(4));
+                var primaryType = reader.IsDBNull(5) ? "Earthquake" : reader.GetValue(5).ToString() ?? "Earthquake";
+                var isCluster = !reader.IsDBNull(6) && Convert.ToBoolean(reader.GetValue(6));
+
+                clusters.Add(new MarkerClusterDto(
+                    ClusterId: clusterId,
+                    PointCount: pointCount,
+                    Latitude: lat,
+                    Longitude: lng,
+                    MaxSeverity: maxSeverity,
+                    PrimaryDisasterType: primaryType,
+                    IsCluster: isCluster
+                ));
+            }
+            return clusters;
         }
-
-        using var command = new NpgsqlCommand(sql, connection);
-        command.Parameters.AddWithValue("minLat", minLat);
-        command.Parameters.AddWithValue("maxLat", maxLat);
-        command.Parameters.AddWithValue("minLng", minLng);
-        command.Parameters.AddWithValue("maxLng", maxLng);
-        command.Parameters.AddWithValue("gridStep", gridStep);
-
-        using var reader = await command.ExecuteReaderAsync(cancellationToken);
-        while (await reader.ReadAsync(cancellationToken))
+        catch
         {
-            var clusterId = reader.IsDBNull(0) ? string.Empty : reader.GetString(0);
-            var pointCount = reader.IsDBNull(1) ? 0 : Convert.ToInt32(reader.GetValue(1));
-            var lat = reader.IsDBNull(2) ? 0.0 : Convert.ToDouble(reader.GetValue(2));
-            var lng = reader.IsDBNull(3) ? 0.0 : Convert.ToDouble(reader.GetValue(3));
-            var maxSeverity = reader.IsDBNull(4) ? 1 : Convert.ToInt32(reader.GetValue(4));
-            var primaryType = reader.IsDBNull(5) ? "Earthquake" : reader.GetValue(5).ToString() ?? "Earthquake";
-            var isCluster = !reader.IsDBNull(6) && Convert.ToBoolean(reader.GetValue(6));
+            var events = await _dbContext.Events
+                .Where(e => !e.IsDeleted && e.Location.Latitude >= minLat && e.Location.Latitude <= maxLat && e.Location.Longitude >= minLng && e.Location.Longitude <= maxLng)
+                .ToListAsync(cancellationToken);
 
-            clusters.Add(new MarkerClusterDto(
-                ClusterId: clusterId,
-                PointCount: pointCount,
-                Latitude: lat,
-                Longitude: lng,
-                MaxSeverity: maxSeverity,
-                PrimaryDisasterType: primaryType,
-                IsCluster: isCluster
-            ));
+            return events.Select(e => new MarkerClusterDto(
+                ClusterId: e.Id.ToString(),
+                PointCount: 1,
+                Latitude: e.Location.Latitude,
+                Longitude: e.Location.Longitude,
+                MaxSeverity: e.Severity,
+                PrimaryDisasterType: e.Type.ToString(),
+                IsCluster: false
+            )).ToList();
         }
-
-        return clusters;
     }
 }
