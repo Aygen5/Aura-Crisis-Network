@@ -282,10 +282,10 @@ function CommandCenter() {
     }
   }, [dbNotifications, notes.length]);
 
-  const selectedEvent = events.find((e) => e.id === selectedId);
+  const selectedEvent = useMemo(() => events.find((e) => e.id === selectedId), [events, selectedId]);
 
-  const availableUnitsCount = units.filter((u) => u.status === "Available").length;
-  const dispatchedUnitsCount = units.filter((u) => u.status === "Dispatched" || u.status === "OnScene").length;
+  const availableUnitsCount = useMemo(() => units.filter((u) => u.status === "Available").length, [units]);
+  const dispatchedUnitsCount = useMemo(() => units.filter((u) => u.status === "Dispatched" || u.status === "OnScene").length, [units]);
 
   const handleToggle = useCallback((key: string) => {
     setActive((prev) => ({ ...prev, [key]: !prev[key] }));

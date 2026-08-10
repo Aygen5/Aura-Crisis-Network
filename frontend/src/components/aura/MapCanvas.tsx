@@ -71,6 +71,74 @@ const heatNodes = [
   { id: "hn-5", cx: 340, cy: 300, r: 85, gradient: "url(#heatLow)", density: "Seyrek (Mavi)", label: "Bursa / Nilüfer" },
 ];
 
+const TurkeyPathsLayer = memo(function TurkeyPathsLayer() {
+  return (
+    <>
+      <g fill="oklch(0.222 0 0)" stroke="oklch(0.36 0.02 244)" strokeWidth="0.8">
+        {NEIGHBOR_PATHS.map((d, i) => (
+          <path key={i} d={d} />
+        ))}
+      </g>
+
+      <g filter="url(#landShadow)">
+        {TURKEY_PATHS.map((d, i) => (
+          <path
+            key={i}
+            d={d}
+            fill="oklch(0.252 0 0)"
+            stroke="oklch(0.44 0.03 244)"
+            strokeWidth="1.1"
+            strokeLinejoin="round"
+          />
+        ))}
+      </g>
+    </>
+  );
+});
+
+const CityLabelsLayer = memo(function CityLabelsLayer() {
+  return (
+    <g pointerEvents="none">
+      {SEA_LABELS.map((s) => (
+        <text
+          key={s.n}
+          x={s.x}
+          y={s.y}
+          textAnchor="middle"
+          fill="oklch(0.62 0.05 244)"
+          fontSize="10"
+          letterSpacing="2.4"
+          fontFamily="var(--font-sans)"
+        >
+          {s.n}
+        </text>
+      ))}
+      {CITIES.map((c) => (
+        <g key={c.n}>
+          <circle
+            cx={c.x}
+            cy={c.y}
+            r={c.major ? 2.6 : 1.6}
+            fill="oklch(0.82 0 0 / 0.65)"
+            stroke="oklch(0.18 0 0)"
+            strokeWidth="0.8"
+          />
+          <text
+            x={c.x + (c.major ? 7 : 5)}
+            y={c.y + 3.2}
+            fill={c.major ? "oklch(0.86 0 0 / 0.82)" : "oklch(0.70 0 0 / 0.5)"}
+            fontSize={c.major ? 11 : 9}
+            letterSpacing={c.major ? 0.4 : 0.2}
+            fontFamily="var(--font-sans)"
+          >
+            {c.n}
+          </text>
+        </g>
+      ))}
+    </g>
+  );
+});
+
 export const BaseMap = memo(function BaseMap({
   heatmap = false,
   risk = false,
@@ -159,24 +227,7 @@ export const BaseMap = memo(function BaseMap({
         <rect width="1000" height="600" fill="url(#graticule)" />
 
         <g style={mapTransform}>
-          <g fill="oklch(0.222 0 0)" stroke="oklch(0.36 0.02 244)" strokeWidth="0.8">
-            {NEIGHBOR_PATHS.map((d, i) => (
-              <path key={i} d={d} />
-            ))}
-          </g>
-
-          <g filter="url(#landShadow)">
-            {TURKEY_PATHS.map((d, i) => (
-              <path
-                key={i}
-                d={d}
-                fill="oklch(0.252 0 0)"
-                stroke="oklch(0.44 0.03 244)"
-                strokeWidth="1.1"
-                strokeLinejoin="round"
-              />
-            ))}
-          </g>
+          <TurkeyPathsLayer />
 
           {risk && (
             <g>
@@ -233,46 +284,7 @@ export const BaseMap = memo(function BaseMap({
             </g>
           )}
 
-          {labels && (
-            <g pointerEvents="none">
-              {SEA_LABELS.map((s) => (
-                <text
-                  key={s.n}
-                  x={s.x}
-                  y={s.y}
-                  textAnchor="middle"
-                  fill="oklch(0.62 0.05 244)"
-                  fontSize="10"
-                  letterSpacing="2.4"
-                  fontFamily="var(--font-sans)"
-                >
-                  {s.n}
-                </text>
-              ))}
-              {CITIES.map((c) => (
-                <g key={c.n}>
-                  <circle
-                    cx={c.x}
-                    cy={c.y}
-                    r={c.major ? 2.6 : 1.6}
-                    fill="oklch(0.82 0 0 / 0.65)"
-                    stroke="oklch(0.18 0 0)"
-                    strokeWidth="0.8"
-                  />
-                  <text
-                    x={c.x + (c.major ? 7 : 5)}
-                    y={c.y + 3.2}
-                    fill={c.major ? "oklch(0.86 0 0 / 0.82)" : "oklch(0.70 0 0 / 0.5)"}
-                    fontSize={c.major ? 11 : 9}
-                    letterSpacing={c.major ? 0.4 : 0.2}
-                    fontFamily="var(--font-sans)"
-                  >
-                    {c.n}
-                  </text>
-                </g>
-              ))}
-            </g>
-          )}
+          {labels && <CityLabelsLayer />}
         </g>
       </svg>
     </div>
@@ -326,9 +338,9 @@ export const VehicleMarker = memo(function VehicleMarker({
   return (
     <button
       onClick={handleClick}
-      style={{ left: leftPos, top: topPos }}
+      style={{ left: leftPos, top: topPos, willChange: "left, top" }}
       className={cn(
-        "pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ease-out z-25",
+        "pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300 ease-out z-25",
         selected ? "scale-125 ring-2 ring-white" : "hover:scale-110"
       )}
     >

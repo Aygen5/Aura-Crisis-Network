@@ -66,11 +66,54 @@ export function SignalRProvider({ children }: { children: ReactNode }) {
       });
     });
 
-    const unsubVehicle = onVehiclePositionUpdated((updatedUnit) => {
+    // Throttled batching for vehicle telemetry updates to prevent main thread lockup
+    const vehicleBatchBuffer = new Map<string, EmergencyUnitDto>();
+    let batchTimer: number | null = null;
+
+    const flushVehicleBatch = () => {
+      batchTimer = null;
+      if (vehicleBatchBuffer.size === 0) return;
+
+      const batchMap = new Map(vehicleBatchBuffer);
+      vehicleBatchBuffer.clear();
+
       queryClient.setQueryData<EmergencyUnitDto[]>(QUERY_KEYS.emergencyUnits.all, (old) => {
-        if (!old) return [updatedUnit];
-        return old.map((u) => (u.id === updatedUnit.id ? updatedUnit : u));
+        if (!old) return Array.from(batchMap.values());
+        let hasChanges = false;
+        const updated = old.map((u) => {
+          const fresh = batchMap.get(u.id);
+          if (fresh) {
+            if (
+              u.latitude !== fresh.latitude ||
+              u.longitude !== fresh.longitude ||
+              u.status !== fresh.status ||
+              u.speedKmh !== fresh.speedKmh ||
+              u.headingDegrees !== fresh.headingDegrees
+            ) {
+              hasChanges = true;
+              return fresh;
+            }
+          }
+          return u;
+        });
+
+        // Add any new units that were not in cache
+        for (const [id, fresh] of batchMap.entries()) {
+          if (!old.some((u) => u.id === id)) {
+            updated.push(fresh);
+            hasChanges = true;
+          }
+        }
+
+        return hasChanges ? updated : old;
       });
+    };
+
+    const unsubVehicle = onVehiclePositionUpdated((updatedUnit) => {
+      vehicleBatchBuffer.set(updatedUnit.id, updatedUnit);
+      if (batchTimer === null) {
+        batchTimer = window.setTimeout(flushVehicleBatch, 150);
+      }
     });
 
     const interval = setInterval(() => {
@@ -85,6 +128,9 @@ export function SignalRProvider({ children }: { children: ReactNode }) {
       unsubReportCreated();
       unsubReport();
       unsubVehicle();
+      if (batchTimer !== null) {
+        clearTimeout(batchTimer);
+      }
       clearInterval(interval);
     };
   }, [queryClient]);

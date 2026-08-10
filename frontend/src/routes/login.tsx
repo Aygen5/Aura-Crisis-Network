@@ -13,7 +13,7 @@ type LoginSearch = {
 export const Route = createFileRoute("/login")({
   beforeLoad: () => {
     if (isAuthenticated()) {
-      throw redirect({ to: "/" });
+      throw redirect({ to: "/", search: { lat: undefined, lng: undefined } });
     }
   },
   validateSearch: (search: Record<string, unknown>): LoginSearch => {
@@ -48,7 +48,7 @@ function Login() {
 
   useEffect(() => {
     if (isAuthenticated()) {
-      navigate({ to: "/" });
+      navigate({ to: "/", search: { lat: undefined, lng: undefined } });
     }
   }, [navigate]);
 
@@ -65,7 +65,7 @@ function Login() {
 
     try {
       await loginUser(email, password);
-      navigate({ to: "/" });
+      window.location.href = "/";
     } catch (err: any) {
       setError(err?.message || "Giriş başarısız. Lütfen bilgilerinizi kontrol ediniz.");
     } finally {
@@ -111,7 +111,7 @@ function Login() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="operator@aura.network"
+              placeholder="operator@aura.com"
               required
               className="w-full rounded-lg border border-border bg-background/50 px-3.5 py-2 text-[13px] outline-none transition-colors focus:border-ring"
             />
@@ -141,9 +141,26 @@ function Login() {
           </button>
         </form>
 
+        <div className="mt-6 rounded-lg border border-border bg-background/40 p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="text-lg">💡</span>
+            <h3 className="text-[12px] font-semibold text-foreground">Demo Test Hesapları</h3>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between rounded-md border border-border bg-background/50 px-3 py-2 text-[11px]">
+              <span className="font-medium text-red-400">Operatör</span>
+              <span className="font-mono text-muted-foreground">operator@aura.com / Aura2026!</span>
+            </div>
+            <div className="flex items-center justify-between rounded-md border border-border bg-background/50 px-3 py-2 text-[11px]">
+              <span className="font-medium text-emerald-400">Vatandaş</span>
+              <span className="font-mono text-muted-foreground">citizen@aura.com / Aura2026!</span>
+            </div>
+          </div>
+        </div>
+
         <div className="mt-6 flex items-center gap-2 border-t border-border pt-5 text-[11px] text-muted-foreground">
           <Lock className="h-3 w-3" />
-          JWT 256-Bit SSL Şifreli Güvenli Bağlantı
+          JWT 256-Bit SSL Şifreli Güvenli Bağlant
         </div>
       </div>
 

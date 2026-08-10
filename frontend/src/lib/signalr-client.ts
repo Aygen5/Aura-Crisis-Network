@@ -16,8 +16,15 @@ export function getSignalRConnection(): signalR.HubConnection {
         skipNegotiation: false,
         transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
         accessTokenFactory: () => {
-          const token = localStorage.getItem("token"); 
-          return token ? token : "";
+          const sessionString = localStorage.getItem("aura_auth_session");
+          if (!sessionString) return "";
+          try {
+            const sessionData = JSON.parse(sessionString);
+            return sessionData.accessToken ? sessionData.accessToken : "";
+          } catch (error) {
+            console.error("Token okunurken hata oluştu:", error);
+            return "";
+          }
         }
       })
       .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
@@ -34,8 +41,15 @@ export function getVehiclesSignalRConnection(): signalR.HubConnection {
         skipNegotiation: false,
         transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
         accessTokenFactory: () => {
-          const token = localStorage.getItem("token"); 
-          return token ? token : "";
+          const sessionString = localStorage.getItem("aura_auth_session");
+          if (!sessionString) return "";
+          try {
+            const sessionData = JSON.parse(sessionString);
+            return sessionData.accessToken ? sessionData.accessToken : "";
+          } catch (error) {
+            console.error("Token okunurken hata oluştu:", error);
+            return "";
+          }
         }
       })
       .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
@@ -48,14 +62,21 @@ export function getVehiclesSignalRConnection(): signalR.HubConnection {
 export async function startSignalRConnection(): Promise<void> {
   const crisisConn = getSignalRConnection();
   const vehiclesConn = getVehiclesSignalRConnection();
-
   if (crisisConn.state === signalR.HubConnectionState.Disconnected) {
     try {
       await crisisConn.start();
     } catch {}
   }
-
-  if (vehiclesConn.state === signalR.HubConnectionState.Disconnected) {
+  const sessionString = localStorage.getItem("aura_auth_session");
+  let isOperator = false;
+  if (sessionString) {
+    try {
+      const sessionData = JSON.parse(sessionString);
+      const roles = sessionData.roles || [];
+      isOperator = roles.includes("Operator") || sessionData.role === "Operator";
+    } catch {}
+  }
+  if (isOperator && vehiclesConn.state === signalR.HubConnectionState.Disconnected) {
     try {
       await vehiclesConn.start();
     } catch {}

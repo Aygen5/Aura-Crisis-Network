@@ -16,6 +16,9 @@ using Serilog;
 using Serilog.Events;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
+using Aura.WebApi.DbSeeder;
+using Microsoft.AspNetCore.Identity;
+using Aura.Infrastructure.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -331,16 +334,83 @@ if (!app.Environment.IsEnvironment("Testing"))
 {
     using (var scope = app.Services.CreateScope())
     {
-        var dbContext =
-            scope.ServiceProvider
-                .GetRequiredService<AuraDbContext>();
+        var services = scope.ServiceProvider;
+        var dbContext = services.GetRequiredService<AuraDbContext>();
 
         await dbContext.Database.MigrateAsync();
 
         await AuraDbSeeder.SeedAsync(dbContext);
+
+        try
+        {
+            await DbSeeder.SeedRolesAndUsersAsync(services);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Demo hesaplar oluşturulurken bir hata oluştu: " + ex.Message);
+        }
     }
 }
 
+app.MapGet("/olustur-demo", async (
+    [Microsoft.AspNetCore.Mvc.FromServices] UserManager<ApplicationUser> userManager,
+    [Microsoft.AspNetCore.Mvc.FromServices] RoleManager<ApplicationRole> roleManager) =>
+{
+    if (!await roleManager.RoleExistsAsync("Operator"))
+    {
+        await roleManager.CreateAsync(new ApplicationRole("Operator"));
+    }
+
+    if (!await roleManager.RoleExistsAsync("Citizen"))
+    {
+        await roleManager.CreateAsync(new ApplicationRole("Citizen"));
+    }
+
+    var opEmail = "operator@aura.com";
+    var opUser = await userManager.FindByEmailAsync(opEmail);
+    var opStatus = "Zaten mevcut.";
+
+    if (opUser == null)
+    {
+        opUser = new ApplicationUser { UserName = opEmail, Email = opEmail, FullName = "Demo Operator", EmailConfirmed = true };
+        var opResult = await userManager.CreateAsync(opUser, "Aura2026!");
+        if (opResult.Succeeded)
+        {
+            await userManager.AddToRoleAsync(opUser, "Operator");
+            opStatus = "Başarıyla oluşturuldu.";
+        }
+        else
+        {
+            opStatus = "Hata: " + string.Join(", ", opResult.Errors.Select(e => e.Description));
+        }
+    }
+
+    var citEmail = "citizen@aura.com";
+    var citUser = await userManager.FindByEmailAsync(citEmail);
+    var citStatus = "Zaten mevcut.";
+
+    if (citUser == null)
+    {
+        citUser = new ApplicationUser { UserName = citEmail, Email = citEmail, FullName = "Demo Citizen", EmailConfirmed = true };
+        var citResult = await userManager.CreateAsync(citUser, "Aura2026!");
+        if (citResult.Succeeded)
+        {
+            await userManager.AddToRoleAsync(citUser, "Citizen");
+            citStatus = "Başarıyla oluşturuldu.";
+        }
+        else
+        {
+            citStatus = "Hata: " + string.Join(", ", citResult.Errors.Select(e => e.Description));
+        }
+    }
+
+    return Results.Ok(new
+    {
+        Message = "Demo hesap kontrolü tamamlandı.",
+        OperatorAccount = opStatus,
+        CitizenAccount = citStatus
+    });
+});
 
 app.Run();
 
