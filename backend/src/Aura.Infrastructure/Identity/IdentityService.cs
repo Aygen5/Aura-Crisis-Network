@@ -39,9 +39,13 @@ public class IdentityService : IIdentityService
             return (false, string.Empty, new[] { "User with this email already exists." });
         }
 
-        if (!await _roleManager.RoleExistsAsync(role))
+        var assignedRole = string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase) || string.Equals(role, "Operator", StringComparison.OrdinalIgnoreCase)
+            ? "Citizen"
+            : (string.IsNullOrWhiteSpace(role) ? "Citizen" : role);
+
+        if (!await _roleManager.RoleExistsAsync(assignedRole))
         {
-            await _roleManager.CreateAsync(new ApplicationRole(role));
+            await _roleManager.CreateAsync(new ApplicationRole(assignedRole));
         }
 
         var user = new ApplicationUser
@@ -58,7 +62,7 @@ public class IdentityService : IIdentityService
             return (false, string.Empty, result.Errors.Select(e => e.Description).ToArray());
         }
 
-        await _userManager.AddToRoleAsync(user, role);
+        await _userManager.AddToRoleAsync(user, assignedRole);
 
         return (true, user.Id.ToString(), Array.Empty<string>());
     }

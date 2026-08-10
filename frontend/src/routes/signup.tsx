@@ -22,7 +22,6 @@ function SignUp() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("Citizen");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -37,7 +36,7 @@ function SignUp() {
     setError(null);
 
     try {
-      await registerUser(email, password, fullName, role);
+      await registerUser(email, password, fullName);
       navigate({
         to: "/login",
         search: { registered: true, email },
@@ -60,7 +59,7 @@ function SignUp() {
             <div className="label-xs">Aura Crisis Network</div>
             <h1 className="mt-1.5 text-lg font-semibold tracking-tight">Yeni Hesap Oluşturun</h1>
             <p className="mt-1 text-[13px] text-muted-foreground">
-              Vatandaş veya Nöbetçi Operatör hesabı ile sisteme kaydolun.
+              Vatandaş (Citizen) hesabı ile sisteme kaydolun.
             </p>
           </div>
         </div>
@@ -112,20 +111,6 @@ function SignUp() {
               required
               className="w-full rounded-lg border border-border bg-background/50 px-3.5 py-2 text-[13px] outline-none focus:border-ring"
             />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-[12px] font-medium text-foreground">
-              Hesap Rolü
-            </label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full rounded-lg border border-border bg-background/50 px-3.5 py-2 text-[13px] outline-none focus:border-ring"
-            >
-              <option value="Citizen">Vatandaş (Citizen)</option>
-              <option value="Operator">Nöbetçi Operatör (Operator)</option>
-            </select>
           </div>
 
           <button

@@ -26,7 +26,7 @@ import { auditLogsService } from "@/services/audit-logs.service";
 import { healthService } from "@/services/health.service";
 
 export const loginUser = (email: string, pass: string) => authService.login({ email, password: pass });
-export const registerUser = (email: string, pass: string, name: string, role = "Citizen") => authService.register({ email, password: pass, fullName: name, role });
+export const registerUser = (email: string, pass: string, name: string) => authService.register({ email, password: pass, fullName: name });
 export const refreshAuthToken = () => authService.refreshToken();
 
 export const fetchActiveEvents = () => eventsService.getActiveEvents();

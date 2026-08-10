@@ -6,8 +6,7 @@ namespace Aura.Application.Auth.Commands.RegisterUser;
 public record RegisterUserCommand(
     string Email,
     string Password,
-    string FullName,
-    string Role = "Citizen"
+    string FullName
 ) : IRequest<(bool Succeeded, string UserId, string[] Errors)>;
 
 public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, (bool Succeeded, string UserId, string[] Errors)>
@@ -27,7 +26,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, (
             request.Email,
             request.Password,
             request.FullName,
-            request.Role,
+            "Citizen",
             cancellationToken
         );
     }
