@@ -172,7 +172,35 @@ builder.Services.AddCors(options =>
     options.AddPolicy("CorsPolicy", policy =>
     {
         policy
-            .WithOrigins(allowedOrigins)
+            .SetIsOriginAllowed(origin =>
+            {
+                if (string.IsNullOrWhiteSpace(origin)) return false;
+
+                // 1. Check explicitly configured origins in appsettings / environment variables
+                if (allowedOrigins.Any(o => o.Equals(origin, StringComparison.OrdinalIgnoreCase) || o == "*"))
+                {
+                    return true;
+                }
+
+                // 2. Allow any Vercel deployment domain (*.vercel.app) or localhost
+                try
+                {
+                    var uri = new Uri(origin);
+                    var host = uri.Host;
+
+                    if (host.EndsWith(".vercel.app", StringComparison.OrdinalIgnoreCase) ||
+                        host.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+                        host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+                catch
+                {
+                }
+
+                return false;
+            })
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();

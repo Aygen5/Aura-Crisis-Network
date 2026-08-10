@@ -47,6 +47,8 @@ obj/
 *.userosscache
 *.sln.docstates
 .vs/
+appsettings.Production.json
+appsettings.*.local.json
 
 # Local Documentation (Hidden from GitHub remote)
 docs/

@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { FileText, Film, Image as ImageIcon, Download, ExternalLink, X, Music } from "lucide-react";
+import { API_CONFIG } from "@/config/api.config";
 import type { ReportAttachmentDto } from "@/lib/api-client";
 
-const API_HOST = "http://localhost:5000";
+const API_HOST = API_CONFIG.BASE_URL.replace(/\/api\/v1\/?$/, "");
 
 interface AttachmentGalleryProps {
   attachments?: ReportAttachmentDto[];

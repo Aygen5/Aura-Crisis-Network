@@ -18,6 +18,7 @@ import { AppShell } from "@/components/aura/AppShell";
 import { StatCard, AuraBadge, StatusDot } from "@/components/aura/primitives";
 import { useSystemHealth } from "@/queries/useHealthQuery";
 import { hasAnyRole, isAuthenticated, type ComponentHealthDto } from "@/lib/api-client";
+import { API_CONFIG } from "@/config/api.config";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/system-health")({
@@ -81,7 +82,7 @@ function SystemHealthPage() {
               10s Canlı Yenileme
             </button>
             <a
-              href="http://localhost:5000/metrics"
+              href={`${API_CONFIG.BASE_URL.replace(/\/api\/v1\/?$/, "")}/metrics`}
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-xs font-medium text-primary-foreground transition-transform hover:scale-105"
