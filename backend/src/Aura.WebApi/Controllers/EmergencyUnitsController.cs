@@ -55,6 +55,7 @@ public class EmergencyUnitsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/location")]
+    [Authorize(Roles = "Admin,Operator,FieldUnit")]
     [ProducesResponseType(typeof(EmergencyUnitDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<EmergencyUnitDto>> UpdateLocation(
         [FromRoute] Guid id,
