@@ -15,6 +15,10 @@ export function getSignalRConnection(): signalR.HubConnection {
       .withUrl(CRISIS_HUB_URL, {
         skipNegotiation: false,
         transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
+        accessTokenFactory: () => {
+          const token = localStorage.getItem("token"); 
+          return token ? token : "";
+        }
       })
       .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
       .configureLogging(signalR.LogLevel.Warning)
@@ -29,6 +33,10 @@ export function getVehiclesSignalRConnection(): signalR.HubConnection {
       .withUrl(VEHICLES_HUB_URL, {
         skipNegotiation: false,
         transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
+        accessTokenFactory: () => {
+          const token = localStorage.getItem("token"); 
+          return token ? token : "";
+        }
       })
       .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
       .configureLogging(signalR.LogLevel.Warning)
