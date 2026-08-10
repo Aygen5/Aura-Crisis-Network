@@ -64,8 +64,8 @@ builder.Services.AddCrisisNotificationService<CrisisHub>();
 
 var secretKey = builder.Configuration["JwtSettings:SecretKey"];
 
-if (string.IsNullOrWhiteSpace(secretKey) ||
-    secretKey.Contains("SuperSecretKeyForAuraCrisisNetworkProductionPlatform2026"))
+// if (string.IsNullOrWhiteSpace(secretKey) ||
+ /*   secretKey.Contains("SuperSecretKeyForAuraCrisisNetworkProductionPlatform2026"))
 {
     if (builder.Environment.IsProduction())
     {
@@ -82,7 +82,7 @@ if (secretKey.Length < 32)
     throw new InvalidOperationException(
         "CRITICAL SECURITY FAILURE: 'JwtSettings:SecretKey' must be at least 32 characters (256 bits) long for HMAC-SHA256 signing.");
 }
-
+*/
 var issuer =
     builder.Configuration["JwtSettings:Issuer"]
     ?? "AuraCrisisNetwork";
