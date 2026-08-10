@@ -17,15 +17,18 @@ public class UploadReportAttachmentCommandHandler : IRequestHandler<UploadReport
 {
     private readonly ICitizenReportRepository _citizenReportRepository;
     private readonly IFileStorageService _fileStorageService;
+    private readonly ICurrentUserService _currentUserService;
     private readonly IUnitOfWork _unitOfWork;
 
     public UploadReportAttachmentCommandHandler(
         ICitizenReportRepository citizenReportRepository,
         IFileStorageService fileStorageService,
+        ICurrentUserService currentUserService,
         IUnitOfWork unitOfWork)
     {
         _citizenReportRepository = citizenReportRepository;
         _fileStorageService = fileStorageService;
+        _currentUserService = currentUserService;
         _unitOfWork = unitOfWork;
     }
 
@@ -33,6 +36,13 @@ public class UploadReportAttachmentCommandHandler : IRequestHandler<UploadReport
     {
         var report = await _citizenReportRepository.GetByIdAsync(request.ReportId, cancellationToken);
         if (report == null) return null;
+
+        var currentUserId = _currentUserService.UserId;
+
+        if (string.IsNullOrWhiteSpace(currentUserId) || report.ReporterUserId != currentUserId)
+        {
+            return null;
+        }
 
         var fileUrl = await _fileStorageService.SaveFileAsync(
             request.FileStream,
