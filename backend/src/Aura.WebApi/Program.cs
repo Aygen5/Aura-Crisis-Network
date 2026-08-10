@@ -84,11 +84,19 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
+var allowedOrigins = (builder.Configuration["CorsSettings:AllowedOrigins"]
+    ?? builder.Configuration["AllowedOrigins"]
+    ?? (builder.Environment.IsProduction() ? "https://aura-crisis-network.vercel.app" : "http://localhost:5173,http://localhost:3000,http://localhost:5232"))
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    .Select(o => o.TrimEnd('/'))
+    .Distinct()
+    .ToArray();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", policy =>
     {
-        policy.SetIsOriginAllowed(_ => true)
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
