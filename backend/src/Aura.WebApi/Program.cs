@@ -176,13 +176,11 @@ builder.Services.AddCors(options =>
             {
                 if (string.IsNullOrWhiteSpace(origin)) return false;
 
-                // 1. Check explicitly configured origins in appsettings / environment variables
+            
                 if (allowedOrigins.Any(o => o.Equals(origin, StringComparison.OrdinalIgnoreCase) || o == "*"))
                 {
                     return true;
                 }
-
-                // 2. Allow any Vercel deployment domain (*.vercel.app) or localhost
                 try
                 {
                     var uri = new Uri(origin);
@@ -257,11 +255,7 @@ app.UseExceptionHandler();
 app.UseMiddleware<CorrelationIdMiddleware>();
 
 
-
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
+app.MapOpenApi();
 
 
 app.UseCors("CorsPolicy");
