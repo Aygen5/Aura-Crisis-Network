@@ -29,6 +29,9 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -141,6 +144,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+app.UseExceptionHandler();
 app.UseMiddleware<CorrelationIdMiddleware>();
 
 if (app.Environment.IsDevelopment())
@@ -174,7 +178,6 @@ app.MapHealthChecks("/health", new HealthCheckOptions
                 Status = e.Value.Status.ToString(),
                 DurationMs = e.Value.Duration.TotalMilliseconds,
                 Description = e.Value.Description,
-                Exception = e.Value.Exception?.Message
             })
         }, new JsonSerializerOptions { WriteIndented = true });
 
