@@ -23,7 +23,7 @@ public class AuraWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
     };
 
     private PostgreSqlContainer? _dbContainer;
-    private string _connectionString = "Host=127.0.0.1;Port=5432;Database=aura_integration_test_db;Username=aura_user;Password=aura_password_2026!;";
+    private string _connectionString = "Host=127.0.0.1;Port=5432;Database=aura_integration_test_db;Username=aura_user;Password=aura_test_password_123!;";
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -55,7 +55,7 @@ public class AuraWebApplicationFactory : WebApplicationFactory<Program>, IAsyncL
                 .WithImage("postgis/postgis:16-3.4")
                 .WithDatabase("aura_integration_test_db")
                 .WithUsername("aura_user")
-                .WithPassword("aura_password_2026!")
+                .WithPassword("aura_test_password_123!")
                 .Build();
 
             await _dbContainer.StartAsync();

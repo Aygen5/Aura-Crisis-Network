@@ -38,7 +38,25 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddCrisisNotificationService<CrisisHub>();
 
-var secretKey = builder.Configuration["JwtSettings:SecretKey"] ?? "SuperSecretKeyForAuraCrisisNetworkProductionPlatform2026!";
+var secretKey = builder.Configuration["JwtSettings:SecretKey"];
+
+if (string.IsNullOrWhiteSpace(secretKey) || secretKey.Contains("SuperSecretKeyForAuraCrisisNetworkProductionPlatform2026"))
+{
+    if (builder.Environment.IsProduction())
+    {
+        throw new InvalidOperationException(
+            "CRITICAL SECURITY FAILURE: 'JwtSettings:SecretKey' is missing or set to a compromised default value in Production environment.");
+    }
+
+    secretKey = "DevOnly_LocalDevelopment_JwtSecretKey_Must_Be_At_Least_256_Bits_Long!";
+}
+
+if (secretKey.Length < 32)
+{
+    throw new InvalidOperationException(
+        "CRITICAL SECURITY FAILURE: 'JwtSettings:SecretKey' must be at least 32 characters (256 bits) long for HMAC-SHA256 signing.");
+}
+
 var issuer = builder.Configuration["JwtSettings:Issuer"] ?? "AuraCrisisNetwork";
 var audience = builder.Configuration["JwtSettings:Audience"] ?? "AuraClients";
 

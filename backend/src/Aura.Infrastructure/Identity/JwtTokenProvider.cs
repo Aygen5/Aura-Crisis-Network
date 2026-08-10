@@ -19,7 +19,7 @@ public class JwtTokenProvider : ITokenProvider
 
     public string GenerateAccessToken(string userId, string email, string fullName, IEnumerable<string> roles)
     {
-        var secretKey = _configuration["JwtSettings:SecretKey"] ?? "SuperSecretKeyForAuraCrisisNetworkProductionPlatform2026!";
+        var secretKey = GetSecretKey();
         var issuer = _configuration["JwtSettings:Issuer"] ?? "AuraCrisisNetwork";
         var audience = _configuration["JwtSettings:Audience"] ?? "AuraClients";
         var expiryMinutes = int.TryParse(_configuration["JwtSettings:ExpiryMinutes"], out var mins) ? mins : 15;
@@ -65,7 +65,7 @@ public class JwtTokenProvider : ITokenProvider
 
     public ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
     {
-        var secretKey = _configuration["JwtSettings:SecretKey"] ?? "SuperSecretKeyForAuraCrisisNetworkProductionPlatform2026!";
+        var secretKey = GetSecretKey();
         var issuer = _configuration["JwtSettings:Issuer"] ?? "AuraCrisisNetwork";
         var audience = _configuration["JwtSettings:Audience"] ?? "AuraClients";
 
@@ -90,5 +90,17 @@ public class JwtTokenProvider : ITokenProvider
         }
 
         return principal;
+    }
+
+    private string GetSecretKey()
+    {
+        var secretKey = _configuration["JwtSettings:SecretKey"];
+
+        if (string.IsNullOrWhiteSpace(secretKey) || secretKey.Contains("SuperSecretKeyForAuraCrisisNetworkProductionPlatform2026"))
+        {
+            return "DevOnly_LocalDevelopment_JwtSecretKey_Must_Be_At_Least_256_Bits_Long!";
+        }
+
+        return secretKey;
     }
 }

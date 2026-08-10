@@ -22,8 +22,12 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? "Host=127.0.0.1;Port=5432;Database=aura_db;Username=aura_user;Password=aura_password_2026!";
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+        if (string.IsNullOrWhiteSpace(connectionString) || connectionString.Contains("aura_password_2026!"))
+        {
+            connectionString = "Host=127.0.0.1;Port=5432;Database=aura_db;Username=aura_user;Password=aura_dev_local_password_only;";
+        }
 
         services.AddScoped<AuditSaveChangesInterceptor>();
 
