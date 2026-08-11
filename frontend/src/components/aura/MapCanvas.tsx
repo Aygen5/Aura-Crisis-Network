@@ -417,64 +417,47 @@ const ClusterMarker = memo(function ClusterMarker({
   onSelect?: (e: EventDto) => void;
   onClusterSelect?: (cluster: MarkerClusterDto) => void;
 }) {
-  if (cluster.pointCount === 1) {
-    const realEvent =
-      eventsMap?.get(cluster.clusterId) ||
-      events.find((e) => e.id === cluster.clusterId) ||
-      events.find((e) => Math.abs(e.latitude - cluster.latitude) < 0.05 && Math.abs(e.longitude - cluster.longitude) < 0.05);
+  const realEvent =
+    eventsMap?.get(cluster.clusterId) ||
+    events.find((e) => e.id === cluster.clusterId) ||
+    events.find((e) => Math.abs(e.latitude - cluster.latitude) < 0.05 && Math.abs(e.longitude - cluster.longitude) < 0.05);
 
-    const meta = disasterMeta[realEvent?.type || cluster.primaryDisasterType] || disasterMeta.Earthquake;
-    return (
-      <button
-        onClick={() => {
-          if (realEvent) {
-            onSelect?.(realEvent);
-          } else {
-            onClusterSelect?.(cluster);
-          }
-        }}
-        style={{
-          left: `${Math.max(4, Math.min(96, ((cluster.longitude - 26.0) / 19.0) * 100))}%`,
-          top: `${Math.max(4, Math.min(96, ((42.0 - cluster.latitude) / 6.0) * 100))}%`,
-        }}
-        className="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300 hover:scale-125 z-30"
-      >
-        <span
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-current/30 bg-card/90 shadow-lg backdrop-blur-md"
-          style={{ color: meta.color }}
-        >
-          <span className="h-4 w-4">
-            <DisasterIcon type={realEvent?.type || cluster.primaryDisasterType} />
-          </span>
-        </span>
-      </button>
-    );
-  }
-
-  const toneColor =
-    cluster.maxSeverity >= 80
-      ? "bg-red-600 border-red-400 shadow-red-500/60 shadow-lg animate-pulse ring-4 ring-red-500/20"
-      : cluster.maxSeverity >= 50
-        ? "bg-red-500/90 border-red-400 shadow-red-500/40 shadow-md"
-        : "bg-red-500/80 border-red-500/90 shadow-red-500/30 shadow-md";
+  const meta = disasterMeta[realEvent?.type || cluster.primaryDisasterType] || disasterMeta.Earthquake;
+  const isHighSeverity = cluster.maxSeverity >= 80;
 
   return (
     <button
-      onClick={() => onClusterSelect?.(cluster)}
+      onClick={() => {
+        if (realEvent && cluster.pointCount === 1) {
+          onSelect?.(realEvent);
+        } else {
+          onClusterSelect?.(cluster);
+        }
+      }}
       style={{
         left: `${Math.max(4, Math.min(96, ((cluster.longitude - 26.0) / 19.0) * 100))}%`,
         top: `${Math.max(4, Math.min(96, ((42.0 - cluster.latitude) / 6.0) * 100))}%`,
       }}
       className="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300 hover:scale-125 z-30"
     >
-      <span
-        className={cn(
-          "flex h-9 w-9 items-center justify-center rounded-full border-2 text-[12px] font-bold text-white shadow-xl backdrop-blur-md",
-          toneColor
+      <div className="relative flex items-center justify-center">
+        <span
+          className={cn(
+            "flex h-8 w-8 items-center justify-center rounded-lg border bg-card/90 shadow-lg backdrop-blur-md",
+            isHighSeverity ? "border-red-500/80 ring-2 ring-red-500/30 animate-pulse" : "border-current/30"
+          )}
+          style={{ color: meta.color }}
+        >
+          <span className="h-4.5 w-4.5">
+            <DisasterIcon type={realEvent?.type || cluster.primaryDisasterType} />
+          </span>
+        </span>
+        {cluster.pointCount > 1 && (
+          <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-black text-white ring-1 ring-background shadow-md">
+            +{cluster.pointCount}
+          </span>
         )}
-      >
-        {cluster.pointCount}
-      </span>
+      </div>
     </button>
   );
 }, (prev, next) => (
