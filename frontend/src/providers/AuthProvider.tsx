@@ -21,9 +21,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isHydrated, setIsHydrated] = useState<boolean>(false);
 
   useEffect(() => {
-    setUser(getStoredAuth());
-    setAuthenticated(isAuthenticated());
+    const syncAuth = () => {
+      setUser(getStoredAuth());
+      setAuthenticated(isAuthenticated());
+    };
+    syncAuth();
     setIsHydrated(true);
+    if (typeof window !== "undefined") {
+      window.addEventListener("storage", syncAuth);
+      return () => window.removeEventListener("storage", syncAuth);
+    }
   }, []);
 
   async function login(request: LoginUserRequest): Promise<AuthResponseDto> {

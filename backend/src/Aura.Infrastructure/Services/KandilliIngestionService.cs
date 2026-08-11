@@ -94,14 +94,7 @@ public class KandilliIngestionService : IKandilliIngestionService
             }
 
             var dateStr = item.GetProperty("date").GetString() ?? string.Empty;
-            if (!DateTimeOffset.TryParse(dateStr, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var detectedAt))
-            {
-                detectedAt = DateTimeOffset.UtcNow;
-            }
-            else
-            {
-                detectedAt = detectedAt.ToUniversalTime();
-            }
+            var detectedAt = ParseKandilliDate(dateStr);
 
             var district = ExtractDistrict(title);
             var severity = CalculateSeverityFromMagnitude(magnitude);
@@ -144,11 +137,8 @@ public class KandilliIngestionService : IKandilliIngestionService
             var parts = Regex.Split(line.Trim(), @"\s+");
             if (parts.Length < 9) continue;
 
-            if (!DateTimeOffset.TryParse($"{parts[0]} {parts[1]}", out var detectedAt))
-            {
-                continue;
-            }
-            detectedAt = detectedAt.ToUniversalTime();
+            var rawDateStr = $"{parts[0]} {parts[1]}";
+            var detectedAt = ParseKandilliDate(rawDateStr);
 
             if (!double.TryParse(parts[2], NumberStyles.Any, CultureInfo.InvariantCulture, out var lat) ||
                 !double.TryParse(parts[3], NumberStyles.Any, CultureInfo.InvariantCulture, out var lng) ||
@@ -198,5 +188,27 @@ public class KandilliIngestionService : IKandilliIngestionService
         if (magnitude < 5.0) return 60;
         if (magnitude < 6.0) return 80;
         return 100;
+    }
+
+    private static readonly TimeSpan TurkeyUtcOffset = TimeSpan.FromHours(3);
+
+    private static DateTimeOffset ParseKandilliDate(string dateStr)
+    {
+        if (string.IsNullOrWhiteSpace(dateStr))
+            return DateTimeOffset.UtcNow;
+
+        var normalizedStr = dateStr.Trim().Replace('.', '-');
+
+        if (DateTimeOffset.TryParse(normalizedStr, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDto))
+        {
+            if (!dateStr.Contains('Z') && !dateStr.Contains('+') && !Regex.IsMatch(dateStr, @"-\d{2}:?\d{2}$"))
+            {
+                var turkeyTime = new DateTimeOffset(parsedDto.DateTime, TurkeyUtcOffset);
+                return turkeyTime.ToUniversalTime();
+            }
+            return parsedDto.ToUniversalTime();
+        }
+
+        return DateTimeOffset.UtcNow;
     }
 }

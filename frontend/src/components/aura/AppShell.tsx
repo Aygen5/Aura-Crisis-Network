@@ -2,7 +2,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, useRef } from "react";
 import { LogOut, Search, ShieldAlert, MapPin } from "lucide-react";
 import { NAVIGATION_CONFIG } from "@/config";
-import { hasAnyRole, type AuthResponseDto } from "@/lib/api-client";
+import { hasAnyRole, getStoredAuth, type AuthResponseDto } from "@/lib/api-client";
 import { useAuth } from "@/providers/AuthProvider";
 import { SEARCHABLE_LOCATIONS, geocodeLocation, type SearchableLocation } from "@/lib/geo-turkey";
 import { NotificationPopover } from "./NotificationPopover";
@@ -26,7 +26,8 @@ export function AuraLogo({ className }: { className?: string }) {
 export function TopNav({ floating = false }: { floating?: boolean }) {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { user: currentUser, logout, isHydrated } = useAuth();
+  const { user: authUser, logout, isHydrated } = useAuth();
+  const currentUser = authUser || getStoredAuth();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
