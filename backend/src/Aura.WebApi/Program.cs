@@ -216,32 +216,27 @@ builder.Services.AddRateLimiter(options =>
 
 
 
-    options.AddFixedWindowLimiter(
+    options.AddPolicy(
         "auth",
-        limiterOptions =>
-        {
-            limiterOptions.PermitLimit =
-                isTesting ? 1000 : 5;
+        httpContext => RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = isTesting ? 1000 : 20,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
 
-            limiterOptions.Window =
-                TimeSpan.FromMinutes(1);
-
-            limiterOptions.QueueLimit = 0;
-        });
-
-
-    options.AddFixedWindowLimiter(
+    options.AddPolicy(
         "api",
-        limiterOptions =>
-        {
-            limiterOptions.PermitLimit =
-                isTesting ? 10000 : 100;
-
-            limiterOptions.Window =
-                TimeSpan.FromMinutes(1);
-
-            limiterOptions.QueueLimit = 0;
-        });
+        httpContext => RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = isTesting ? 10000 : 200,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
 });
 
 

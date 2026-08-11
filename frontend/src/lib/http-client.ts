@@ -123,11 +123,18 @@ export async function httpClient<T>(endpoint: string, options?: RequestInit): Pr
   let response: Response;
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT_MS || 20000);
+
     response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
       ...options,
       headers,
-    });
-  } catch (networkErr) {
+      signal: options?.signal || controller.signal,
+    }).finally(() => clearTimeout(timeoutId));
+  } catch (networkErr: any) {
+    if (networkErr?.name === "AbortError") {
+      throw new Error("Sunucu yanıt vermedi (Zaman aşımı). Lütfen canlı sunucunun aktif olduğundan emin olunuz.");
+    }
     throw new Error("Sunucuya bağlanılamıyor. Lütfen sunucunun çalıştığından ve internet bağlantınızdan emin olunuz.");
   }
 

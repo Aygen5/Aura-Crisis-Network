@@ -1,7 +1,9 @@
 const rawApiUrl =
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_URL ||
-  "http://localhost:5232/api/v1";
+  (import.meta.env.PROD
+    ? "https://aura-crisis-network-1.onrender.com/api/v1"
+    : "http://localhost:5232/api/v1");
 
 const normalizedBaseUrl = rawApiUrl.endsWith("/api/v1")
   ? rawApiUrl

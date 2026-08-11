@@ -65,7 +65,7 @@ function Login() {
 
     try {
       await loginUser(email, password);
-      window.location.href = "/";
+      await navigate({ to: "/", search: { lat: undefined, lng: undefined } });
     } catch (err: any) {
       setError(err?.message || "Giriş başarısız. Lütfen bilgilerinizi kontrol ediniz.");
     } finally {
