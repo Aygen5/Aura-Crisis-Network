@@ -19,8 +19,9 @@ A full-stack, real-time crisis management and emergency response platform design
 ## 🖼️ Command Center Overview
 
 <p align="center">
-  <img src="docs/screenshots/command-center.png" alt="Aura Crisis Network Command Center" width="100%" />
+  <img src="docs/screenshots/command_center.png" alt="Aura Crisis Network Live Command Center Page" width="100%" />
 </p>
+<p align="center"><i>Live Command Center Page (Ana Komuta Merkezi Sayfası): Interactive SVG map, live earthquake stream, and vehicle telemetry.</i></p>
 
 ---
 
@@ -71,12 +72,12 @@ During natural disasters and emergency situations, crisis management teams face 
 <table width="100%">
   <tr>
     <td width="50%" align="center">
-      <b>Geospatial Risk & Buffer Analysis</b><br/><br/>
-      <img src="docs/screenshots/risk-analysis.png" alt="Risk Analysis" width="100%"/>
+      <b>Risk Analysis & Buffer Calculation Page</b><br/><i>(Risk Analizi Sayfası)</i><br/><br/>
+      <img src="docs/screenshots/risk_analysis.png" alt="Aura Crisis Network Risk Analysis Page" width="100%"/>
     </td>
     <td width="50%" align="center">
-      <b>System Health & Telemetry Dashboard</b><br/><br/>
-      <img src="docs/screenshots/system-health.png" alt="System Health" width="100%"/>
+      <b>Secure Authentication & Demo Accounts Page</b><br/><i>(Giriş Yap Sayfası)</i><br/><br/>
+      <img src="docs/screenshots/login.png" alt="Aura Crisis Network Login Page" width="100%"/>
     </td>
   </tr>
 </table>
