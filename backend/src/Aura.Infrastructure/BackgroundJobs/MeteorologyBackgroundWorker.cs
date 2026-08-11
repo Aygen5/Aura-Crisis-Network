@@ -10,6 +10,7 @@ public class MeteorologyBackgroundWorker : BackgroundService
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<MeteorologyBackgroundWorker> _logger;
     private readonly TimeSpan _period = TimeSpan.FromMinutes(30);
+    private readonly TimeSpan _initialDelay = TimeSpan.FromSeconds(15);
 
     public MeteorologyBackgroundWorker(
         IServiceProvider serviceProvider,
@@ -21,6 +22,15 @@ public class MeteorologyBackgroundWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        try
+        {
+            await Task.Delay(_initialDelay, stoppingToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
         using var timer = new PeriodicTimer(_period);
 
         await UpdateMeteorologyRisksAsync(stoppingToken);
@@ -33,6 +43,8 @@ public class MeteorologyBackgroundWorker : BackgroundService
 
     private async Task UpdateMeteorologyRisksAsync(CancellationToken cancellationToken)
     {
+        if (cancellationToken.IsCancellationRequested) return;
+
         try
         {
             using var scope = _serviceProvider.CreateScope();
@@ -40,6 +52,10 @@ public class MeteorologyBackgroundWorker : BackgroundService
 
             await meteorologyService.FetchAndUpdateDistrictWeatherRisksAsync(cancellationToken);
             _logger.LogInformation("Meteorology background worker updated district weather risk scores.");
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Meteorology background worker execution cancelled gracefully.");
         }
         catch (Exception ex)
         {

@@ -1,8 +1,10 @@
 using System.Globalization;
+using System.Net;
 using System.Text.Json;
 using Aura.Application.Common.Interfaces;
 using Aura.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Aura.Infrastructure.Services;
 
@@ -11,6 +13,7 @@ public class MeteorologyService : IMeteorologyService
     private readonly HttpClient _httpClient;
     private readonly IDistrictRiskRepository _districtRiskRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogger<MeteorologyService> _logger;
 
     private static readonly Dictionary<string, (double Lat, double Lng, int InitialSeismicRisk)> DistrictCoordinates = new()
     {
@@ -33,12 +36,13 @@ public class MeteorologyService : IMeteorologyService
     public MeteorologyService(
         HttpClient httpClient,
         IDistrictRiskRepository districtRiskRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        ILogger<MeteorologyService> logger)
     {
         _httpClient = httpClient;
-        _httpClient.Timeout = TimeSpan.FromSeconds(15);
         _districtRiskRepository = districtRiskRepository;
         _unitOfWork = unitOfWork;
+        _logger = logger;
     }
 
     public async Task FetchAndUpdateDistrictWeatherRisksAsync(CancellationToken cancellationToken = default)
@@ -46,32 +50,70 @@ public class MeteorologyService : IMeteorologyService
         var existingRisksList = await _districtRiskRepository.GetAllDistrictRisksAsync(cancellationToken);
         var existingDict = existingRisksList.ToDictionary(r => r.DistrictName, StringComparer.OrdinalIgnoreCase);
 
+        bool updatedAny = false;
+        int districtIndex = 0;
+
         foreach (var (districtName, (lat, lng, initialSeismic)) in DistrictCoordinates)
         {
+            if (cancellationToken.IsCancellationRequested)
+                break;
+
+            if (districtIndex > 0)
+            {
+                try
+                {
+                    await Task.Delay(250, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+            }
+            districtIndex++;
+
             try
             {
                 var url = $"https://api.open-meteo.com/v1/forecast?latitude={lat.ToString(CultureInfo.InvariantCulture)}&longitude={lng.ToString(CultureInfo.InvariantCulture)}&current=precipitation,rain,wind_speed_10m,wind_gusts_10m";
-                var response = await _httpClient.GetAsync(url, cancellationToken);
+                using var response = await _httpClient.GetAsync(url, cancellationToken);
+
+                if (response.StatusCode == HttpStatusCode.TooManyRequests)
+                {
+                    var retryAfterSeconds = response.Headers.RetryAfter?.Delta?.TotalSeconds ?? 60;
+                    _logger.LogWarning("Open-Meteo API returned 429 Too Many Requests for district {District}. Halting weather update cycle for remaining districts. Estimated retry after ~{RetryAfter}s.", districtName, retryAfterSeconds);
+                    break;
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("Open-Meteo API returned HTTP status {StatusCode} for district {District}. Preserving existing database risk records.", response.StatusCode, districtName);
+                    continue;
+                }
+
+                var jsonContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                using var jsonDoc = JsonDocument.Parse(jsonContent);
 
                 double precipitation = 0;
                 double windSpeed = 0;
+                bool parsed = false;
 
-                if (response.IsSuccessStatusCode)
+                if (jsonDoc.RootElement.TryGetProperty("current", out var currentObj))
                 {
-                    var jsonContent = await response.Content.ReadAsStringAsync(cancellationToken);
-                    using var jsonDoc = JsonDocument.Parse(jsonContent);
-
-                    if (jsonDoc.RootElement.TryGetProperty("current", out var currentObj))
+                    if (currentObj.TryGetProperty("precipitation", out var precProp))
                     {
-                        if (currentObj.TryGetProperty("precipitation", out var precProp))
-                        {
-                            precipitation = precProp.GetDouble();
-                        }
-                        if (currentObj.TryGetProperty("wind_speed_10m", out var windProp))
-                        {
-                            windSpeed = windProp.GetDouble();
-                        }
+                        precipitation = precProp.GetDouble();
+                        parsed = true;
                     }
+                    if (currentObj.TryGetProperty("wind_speed_10m", out var windProp))
+                    {
+                        windSpeed = windProp.GetDouble();
+                        parsed = true;
+                    }
+                }
+
+                if (!parsed)
+                {
+                    _logger.LogWarning("Open-Meteo API response for {District} lacked expected weather fields. Skipping update for this district.", districtName);
+                    continue;
                 }
 
                 int floodRisk = CalculateFloodRisk(precipitation);
@@ -88,19 +130,34 @@ public class MeteorologyService : IMeteorologyService
                     await _districtRiskRepository.AddAsync(newRisk, cancellationToken);
                     existingDict[districtName] = newRisk;
                 }
+
+                updatedAny = true;
             }
-            catch
+            catch (OperationCanceledException)
             {
+                _logger.LogInformation("Meteorology update operation cancelled for district {District}.", districtName);
+                break;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to fetch or parse Open-Meteo weather data for district {District}. Preserving existing database risk values.", districtName);
             }
         }
 
-        try
+        if (updatedAny && !cancellationToken.IsCancellationRequested)
         {
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("23505") == true || ex.InnerException?.Message.Contains("IX_DistrictRisks_DistrictName") == true)
-        {
-            // Ignore concurrent duplicate inserts if executed in parallel
+            try
+            {
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("23505") == true || ex.InnerException?.Message.Contains("IX_DistrictRisks_DistrictName") == true)
+            {
+                // Ignore concurrent duplicate inserts if executed in parallel
+            }
+            catch (OperationCanceledException)
+            {
+                // Graceful cancellation shutdown
+            }
         }
     }
 
@@ -128,3 +185,4 @@ public class MeteorologyService : IMeteorologyService
         return 80;
     }
 }
+

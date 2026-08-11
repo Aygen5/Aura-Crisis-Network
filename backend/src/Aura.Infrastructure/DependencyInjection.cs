@@ -115,7 +115,11 @@ public static class DependencyInjection
         services.AddHttpClient<IKandilliIngestionService, KandilliIngestionService>();
         services.AddHostedService<KandilliBackgroundWorker>();
 
-        services.AddHttpClient<IMeteorologyService, MeteorologyService>();
+        services.AddHttpClient<IMeteorologyService, MeteorologyService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(10);
+            client.DefaultRequestHeaders.Add("User-Agent", "AuraCrisisNetwork/1.0 (Emergency Management Platform)");
+        });
         services.AddHostedService<MeteorologyBackgroundWorker>();
 
         services.AddHostedService<NotificationOutboxProcessorJob>();
